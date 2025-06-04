@@ -129,6 +129,7 @@ This server application enhances the underlying `chatterbox-tts` engine with the
     *   **NVIDIA GPU:** CUDA-compatible (Maxwell architecture or newer). Check [NVIDIA CUDA GPUs](https://developer.nvidia.com/cuda-gpus).
     *   **NVIDIA Drivers:** Latest version for your GPU/OS ([Download](https://www.nvidia.com/Download/index.aspx)).
     *   **CUDA Toolkit:** Compatible version (e.g., 11.8, 12.1+) matching the PyTorch build you install.
+    *   **AMD GPU:** ROCm-compatible. Check [AMD ROCm GPUs](https://rocm.docs.amd.com/en/latest/reference/gpu-arch-specs.html).
 *   **(Linux Only):**
     *   `libsndfile1`: Audio library needed by `soundfile`. Install via package manager (e.g., `sudo apt install libsndfile1`).
     *   `ffmpeg`: For robust audio operations (optional but recommended). Install via package manager (e.g., `sudo apt install ffmpeg`).
@@ -176,6 +177,9 @@ pip install --upgrade pip
 
 # Install project requirements
 pip install -r requirements.txt
+
+# Or if using ROCm - installs ROCm 6.4.1 version of torch, torchaudio, and pytorch-triton-rocm
+pip --pre install -r requirements-rocm.txt
 ```
 ⭐ **Note:** This installation includes large libraries like PyTorch and `chatterbox-tts`. The download and installation process may take some time depending on your internet speed and system performance.
 
@@ -385,11 +389,15 @@ This method uses `docker-compose.yml` to manage the container, volumes, and conf
     ```
 
 2.  **Review `docker-compose.yml`:**
-    *   The repository includes a `docker-compose.yml` file. Ensure it's configured for your needs (image source, ports, volumes). The provided one in this project is a good starting point.
+    *   The repository includes a `docker-compose.yml` file for CPU and NVIDIA GPU and `docker-compose-rocm.yml` for ROCm GPU. Ensure it's configured for your needs (image source, ports, volumes). The provided one in this project is a good starting point.
 
 3.  **Start the container:**
     ```bash
+    # For CPU and NVIDIA GPU
     docker compose up -d --build
+
+    # For ROCm GPU
+    docker compose -f docker-compose-rocm.yml up -d --build
     ```
     *   This command will:
         *   Build the Docker image using `Dockerfile` (if not using a pre-built image).
