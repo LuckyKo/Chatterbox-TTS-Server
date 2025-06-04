@@ -1,6 +1,6 @@
 # Chatterbox TTS Server: OpenAI-Compatible API with Web UI, Large Text Handling & Built-in Voices
 
-**Self-host the powerful [Chatterbox TTS model](https://github.com/resemble-ai/chatterbox) with this enhanced FastAPI server! Features an intuitive Web UI, a flexible API endpoint, voice cloning, large text processing via intelligent chunking, and consistent, reproducible voices using built-in ready-to-use voices and a generation seed feature.**
+**Self-host the powerful [Chatterbox TTS model](https://github.com/resemble-ai/chatterbox) with this enhanced FastAPI server! Features an intuitive Web UI, a flexible API endpoint, voice cloning, large text processing via intelligent chunking, audiobook generation, and consistent, reproducible voices using built-in ready-to-use voices and a generation seed feature.**
 
 This server is based on the architecture and UI of our [Dia-TTS-Server](https://github.com/devnen/Dia-TTS-Server) project but uses the distinct `chatterbox-tts` engine. Runs accelerated on NVIDIA GPUs (CUDA) with CPU fallback.
 
@@ -12,6 +12,8 @@ This server is based on the architecture and UI of our [Dia-TTS-Server](https://
 [![Docker](https://img.shields.io/badge/Docker-Supported-blue.svg?style=for-the-badge)](https://www.docker.com/)
 [![Web UI](https://img.shields.io/badge/Web_UI-Included-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](#)
 [![CUDA Compatible](https://img.shields.io/badge/CUDA-Compatible-76B900?style=for-the-badge&logo=nvidia&logoColor=white)](https://developer.nvidia.com/cuda-zone)
+[![Model Format](https://img.shields.io/badge/Weights-SafeTensors%20/%20pth-orange.svg?style=for-the-badge)](https://github.com/huggingface/safetensors)
+[![API](https://img.shields.io/badge/OpenAI_Compatible_API-Ready-000000?style=for-the-badge&logo=openai&logoColor=white)](https://platform.openai.com/docs/api-reference)
 
 <div align="center">
   <img src="static/screenshot-d.png" alt="Dia TTS Server Web UI - Dark Mode" width="33%" />
@@ -28,6 +30,7 @@ We solve the complexity of setting up and running the model by offering:
 
 *   A **modern Web UI** for easy experimentation, preset loading, reference audio management, and generation parameter tuning. The interface design draws inspiration from projects like [Lex-au's Orpheus-FastAPI](https://github.com/Lex-au/Orpheus-FastAPI).
 *   **Large Text Handling:** Intelligently splits long plain text inputs into manageable chunks based on sentence structure, processes them sequentially, and seamlessly concatenates the audio.
+*   **📚 Audiobook Generation:** Perfect for creating complete audiobooks - simply paste an entire book's text and the server automatically processes it into a single, seamless audio file with consistent voice quality throughout.
 *   **Predefined Voices:** Select from curated, ready-to-use synthetic voices for consistent and reliable output without cloning setup.
 *   **Voice Cloning:** Generate speech using a voice similar to an uploaded reference audio file.
 *   **Consistent Generation:** Achieve consistent voice output across multiple generations or text chunks by using the "Predefined Voices" or "Voice Cloning" modes, optionally combined with a fixed integer **Seed**.
@@ -46,6 +49,7 @@ This server application enhances the underlying `chatterbox-tts` engine with the
 *   **Large Text Processing (Chunking):**
     *   Automatically handles long plain text inputs by intelligently splitting them into smaller chunks based on sentence boundaries.
     *   Processes each chunk individually and seamlessly concatenates the resulting audio, overcoming potential generation limits of the TTS engine.
+    *   **Ideal for audiobook generation** - paste entire books and get professional-quality audiobooks with consistent narration.
     *   Configurable via UI toggle ("Split text into chunks") and chunk size slider.
 *   **Predefined Voices:**
     *   Allows usage of curated, ready-to-use synthetic voices stored in the `./voices` directory.
@@ -83,6 +87,7 @@ This server application enhances the underlying `chatterbox-tts` engine with the
     *   🩺 Health check endpoint (`/api/ui/initial-data` also serves as a comprehensive status check).
 *   **Advanced Generation Features:**
     *   📚 **Large Text Handling:** Intelligently splits long plain text inputs into chunks based on sentences, generates audio for each, and concatenates the results seamlessly. Configurable via `split_text` and `chunk_size`.
+    *   📖 **Audiobook Creation:** Perfect for generating complete audiobooks from full-length texts with consistent voice quality and automatic chapter handling.
     *   🎤 **Predefined Voices:** Select from curated synthetic voices in the `./voices` directory.
     *   ✨ **Voice Cloning:** Simple voice cloning using an uploaded reference audio file.
     *   🌱 **Consistent Generation:** Use Predefined Voices or Voice Cloning modes, optionally with a fixed integer **Seed**, for consistent voice output.
@@ -428,7 +433,7 @@ Persistent data is stored on your host machine via volume mounts defined in `doc
 
 The most intuitive way to use the server:
 
-*   **Text Input:** Enter your plain text script.
+*   **Text Input:** Enter your plain text script. **For audiobooks:** Simply paste the entire book text - the chunking system will automatically handle long texts and create seamless audio output.   
 *   **Voice Mode:** Choose:
     *   `Predefined Voices`: Select a curated voice from the `./voices` directory.
     *   `Voice Cloning`: Select an uploaded reference file from `./reference_audio`.
