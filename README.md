@@ -14,6 +14,7 @@ This server is based on the architecture and UI of our [Dia-TTS-Server](https://
 [![CUDA Compatible](https://img.shields.io/badge/NVIDIA_CUDA-Compatible-76B900?style=for-the-badge&logo=nvidia&logoColor=white)](https://developer.nvidia.com/cuda-zone)
 [![ROCm Compatible](https://img.shields.io/badge/AMD_ROCm-Compatible-ED1C24?style=for-the-badge&logo=amd&logoColor=white)](https://rocm.docs.amd.com/)
 [![API](https://img.shields.io/badge/OpenAI_Compatible_API-Ready-000000?style=for-the-badge&logo=openai&logoColor=white)](https://platform.openai.com/docs/api-reference)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/devnen/Chatterbox-TTS-Server/blob/main/Chatterbox_TTS_Colab_Demo.ipynb)
 
 <div align="center">
   <img src="static/screenshot-d.png" alt="Chatterbox TTS Server Web UI - Dark Mode" width="33%" />
@@ -449,6 +450,34 @@ Persistent data is stored on your host machine via volume mounts defined in `doc
 *   `./outputs:/app/outputs` (Generated audio files saved from UI/API)
 *   `./logs:/app/logs` (Server log files)
 *   `hf_cache:/app/hf_cache` (Named volume for Hugging Face model cache to persist downloads, matching `HF_HOME` in Dockerfile)
+
+## 🚀 Google Colab (One-Click Demo)
+
+Try Chatterbox TTS Server instantly in your browser without any local installation:
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/devnen/Chatterbox-TTS-Server/blob/main/Chatterbox_TTS_Colab_Demo.ipynb)
+
+### Quick Start:
+1. **Click the badge above** to open the notebook in Google Colab
+2. **Select GPU runtime**: Runtime → Change runtime type → T4 GPU → Save
+3. **Run Cell 1**: Click the play button to install dependencies (~1-5 minutes)
+4. **Run Cell 2**: Start the server and access the Web UI via the provided links
+5. **Generate speech**: Use the web interface to create high-quality TTS audio
+
+### Features Available in Colab:
+- ✅ Full Web UI with all controls
+- ✅ Voice cloning with uploaded audio files  
+- ✅ Predefined voices included
+- ✅ Large text processing with chunking
+- ✅ GPU acceleration (free T4 GPU)
+- ✅ No local installation required
+- ✅ Works on any device with a web browser
+
+### Notes:
+- **First run**: Takes a few minutes to download models (one-time only)
+- **Session limits**: Colab free tier has usage limits; sessions may timeout after inactivity
+- **For production**: Use the local installation or Docker deployment methods above
+
 
 ## 💡 Usage
 
