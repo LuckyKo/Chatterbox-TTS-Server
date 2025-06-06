@@ -40,4 +40,4 @@ tqdm
 # Audio Post-processing
 pydub
 audiotsm
-parselmouth
+praat-parselmouth
