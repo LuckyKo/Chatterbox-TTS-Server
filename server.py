@@ -69,6 +69,7 @@ import utils  # Utility functions
 
 from pydantic import BaseModel, Field
 
+
 class OpenAISpeechRequest(BaseModel):
     model: str
     input_: str = Field(..., alias="input")
@@ -76,6 +77,7 @@ class OpenAISpeechRequest(BaseModel):
     response_format: Literal["wav", "opus", "mp3"] = "wav"  # Add "mp3"
     speed: float = 1.0
     seed: Optional[int] = None
+
 
 # --- Logging Configuration ---
 log_file_path_obj = get_log_file_path()
@@ -569,6 +571,8 @@ async def upload_predefined_voice_endpoint(files: List[UploadFile] = File(...)):
 
 
 # --- TTS Generation Endpoint ---
+
+
 @app.post(
     "/tts",
     tags=["TTS Generation"],
@@ -742,10 +746,8 @@ async def custom_tts_endpoint(
                     f"Inconsistent sample rate from engine: chunk {i+1} ({chunk_sr_from_engine}Hz) "
                     f"differs from previous ({engine_output_sample_rate}Hz). Using first chunk's SR."
                 )
-                # This should ideally not happen if engine is consistent.
 
             current_processed_audio_tensor = chunk_audio_tensor
-            current_sr_for_processing = chunk_sr_from_engine
 
             speed_factor_to_use = (
                 request.speed_factor
@@ -753,73 +755,17 @@ async def custom_tts_endpoint(
                 else get_gen_default_speed_factor()
             )
             if speed_factor_to_use != 1.0:
-                current_processed_audio_tensor, _ = (
-                    utils.apply_speed_factor(  # SR remains same
-                        current_processed_audio_tensor,
-                        current_sr_for_processing,
-                        speed_factor_to_use,
-                    )
+                current_processed_audio_tensor, _ = utils.apply_speed_factor(
+                    current_processed_audio_tensor,
+                    chunk_sr_from_engine,
+                    speed_factor_to_use,
                 )
                 perf_monitor.record(f"Speed factor applied to chunk {i+1}")
 
+            # ### MODIFICATION ###
+            # All other processing is REMOVED from the loop.
+            # We will process the final concatenated audio clip.
             processed_audio_np = current_processed_audio_tensor.cpu().numpy()
-
-            # Ensure processed_audio_np is 1D mono for concatenation
-            if processed_audio_np.ndim == 2:
-                if processed_audio_np.shape[0] == 1:  # (1, N)
-                    processed_audio_np = processed_audio_np.squeeze(0)
-                elif processed_audio_np.shape[1] == 1:  # (N, 1)
-                    processed_audio_np = processed_audio_np.squeeze(1)
-                else:  # True stereo or multi-channel from engine (unexpected for Chatterbox)
-                    logger.warning(
-                        f"Chunk {i+1} from engine/speed_adjust is multi-channel (shape {processed_audio_np.shape}). Taking first channel."
-                    )
-                    processed_audio_np = processed_audio_np[
-                        0, :
-                    ]  # Or processed_audio_np[:, 0] depending on convention
-
-            if processed_audio_np.ndim != 1:
-                err_msg = f"Audio chunk {i+1} is not 1D after processing (shape: {processed_audio_np.shape}). Cannot concatenate."
-                logger.error(err_msg)
-                raise ValueError(err_msg)  # This will become a 500 error
-
-            if config_manager.get_bool("debug.save_intermediate_audio", False):
-                debug_filename = f"debug_chunk_{i}_pre_silence_processing_sr{current_sr_for_processing}.wav"
-                debug_save_path = get_output_path(ensure_absolute=True) / "debug_audio"
-                debug_save_path.mkdir(parents=True, exist_ok=True)
-                utils.save_audio_to_file(
-                    processed_audio_np,
-                    current_sr_for_processing,
-                    str(debug_save_path / debug_filename),
-                )
-
-            if config_manager.get_bool(
-                "audio_processing.enable_silence_trimming", False
-            ):
-                processed_audio_np = utils.trim_lead_trail_silence(
-                    processed_audio_np, current_sr_for_processing
-                )
-                perf_monitor.record(f"Silence trim applied to chunk {i+1}")
-
-            if config_manager.get_bool(
-                "audio_processing.enable_internal_silence_fix", False
-            ):
-                processed_audio_np = utils.fix_internal_silence(
-                    processed_audio_np, current_sr_for_processing
-                )
-                perf_monitor.record(f"Internal silence fix applied to chunk {i+1}")
-
-            if (
-                config_manager.get_bool(
-                    "audio_processing.enable_unvoiced_removal", False
-                )
-                and utils.PARSELMOUTH_AVAILABLE
-            ):
-                processed_audio_np = utils.remove_long_unvoiced_segments(
-                    processed_audio_np, current_sr_for_processing
-                )
-                perf_monitor.record(f"Unvoiced removal applied to chunk {i+1}")
-
             all_audio_segments_np.append(processed_audio_np)
 
         except HTTPException as http_exc:
@@ -842,40 +788,63 @@ async def custom_tts_endpoint(
         )
 
     try:
+        # ### MODIFICATION START ###
+        # First, concatenate all raw chunks into a single audio clip.
         final_audio_np = (
             np.concatenate(all_audio_segments_np)
             if len(all_audio_segments_np) > 1
             else all_audio_segments_np[0]
         )
+        perf_monitor.record("All audio chunks processed and concatenated")
+
+        # Now, apply all audio processing to the COMPLETE audio clip.
+        if config_manager.get_bool("audio_processing.enable_silence_trimming", False):
+            final_audio_np = utils.trim_lead_trail_silence(
+                final_audio_np, engine_output_sample_rate
+            )
+            perf_monitor.record(f"Global silence trim applied")
+
+        if config_manager.get_bool(
+            "audio_processing.enable_internal_silence_fix", False
+        ):
+            final_audio_np = utils.fix_internal_silence(
+                final_audio_np, engine_output_sample_rate
+            )
+            perf_monitor.record(f"Global internal silence fix applied")
+
+        if (
+            config_manager.get_bool("audio_processing.enable_unvoiced_removal", False)
+            and utils.PARSELMOUTH_AVAILABLE
+        ):
+            final_audio_np = utils.remove_long_unvoiced_segments(
+                final_audio_np, engine_output_sample_rate
+            )
+            perf_monitor.record(f"Global unvoiced removal applied")
+        # ### MODIFICATION END ###
+
     except ValueError as e_concat:
         logger.error(f"Audio concatenation failed: {e_concat}", exc_info=True)
-        # Log details of segment shapes for debugging
         for idx, seg in enumerate(all_audio_segments_np):
             logger.error(f"Segment {idx} shape: {seg.shape}, dtype: {seg.dtype}")
         raise HTTPException(
             status_code=500, detail=f"Audio concatenation error: {e_concat}"
         )
 
-    perf_monitor.record("All audio chunks processed and concatenated")
-
     output_format_str = (
         request.output_format if request.output_format else get_audio_output_format()
     )
 
-    # Encode the final audio, potentially resampling to the config's target output sample rate
     encoded_audio_bytes = utils.encode_audio(
         audio_array=final_audio_np,
-        sample_rate=engine_output_sample_rate,  # This is the SR of final_audio_np
+        sample_rate=engine_output_sample_rate,
         output_format=output_format_str,
-        target_sample_rate=final_output_sample_rate,  # utils.encode_audio will handle resampling
+        target_sample_rate=final_output_sample_rate,
     )
     perf_monitor.record(
         f"Final audio encoded to {output_format_str} (target SR: {final_output_sample_rate}Hz from engine SR: {engine_output_sample_rate}Hz)"
     )
 
-    if (
-        encoded_audio_bytes is None or len(encoded_audio_bytes) < 100
-    ):  # Basic sanity check for file size
+    if encoded_audio_bytes is None or len(encoded_audio_bytes) < 100:
         logger.error(
             f"Failed to encode final audio to format: {output_format_str} or output is too small ({len(encoded_audio_bytes or b'')} bytes)."
         )
@@ -901,6 +870,7 @@ async def custom_tts_endpoint(
         io.BytesIO(encoded_audio_bytes), media_type=media_type, headers=headers
     )
 
+
 @app.post("/v1/audio/speech", tags=["OpenAI Compatible"])
 async def openai_speech_endpoint(request: OpenAISpeechRequest):
     # Determine the audio prompt path based on the voice parameter
@@ -914,15 +884,22 @@ async def openai_speech_endpoint(request: OpenAISpeechRequest):
     elif voice_path_reference.is_file():
         audio_prompt_path = voice_path_reference
     else:
-        raise HTTPException(status_code=404, detail=f"Voice file '{request.voice}' not found.")
+        raise HTTPException(
+            status_code=404, detail=f"Voice file '{request.voice}' not found."
+        )
 
     # Check if the TTS model is loaded
     if not engine.MODEL_LOADED:
-        raise HTTPException(status_code=503, detail="TTS engine model is not currently loaded or available.")
+        raise HTTPException(
+            status_code=503,
+            detail="TTS engine model is not currently loaded or available.",
+        )
 
     try:
         # Use the provided seed or the default
-        seed_to_use = request.seed if request.seed is not None else get_gen_default_seed()
+        seed_to_use = (
+            request.seed if request.seed is not None else get_gen_default_seed()
+        )
 
         # Synthesize the audio
         audio_tensor, sr = engine.synthesize(
@@ -935,7 +912,9 @@ async def openai_speech_endpoint(request: OpenAISpeechRequest):
         )
 
         if audio_tensor is None or sr is None:
-            raise HTTPException(status_code=500, detail="TTS engine failed to synthesize audio.")
+            raise HTTPException(
+                status_code=500, detail="TTS engine failed to synthesize audio."
+            )
 
         # Apply speed factor if not 1.0
         if request.speed != 1.0:
