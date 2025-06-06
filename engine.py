@@ -40,6 +40,26 @@ def set_seed(seed_value: int):
     logger.info(f"Global seed set to: {seed_value}")
 
 
+def _test_cuda_functionality() -> bool:
+    """
+    Tests if CUDA is actually functional, not just available.
+
+    Returns:
+        bool: True if CUDA works, False otherwise.
+    """
+    if not torch.cuda.is_available():
+        return False
+
+    try:
+        test_tensor = torch.tensor([1.0])
+        test_tensor = test_tensor.cuda()
+        test_tensor = test_tensor.cpu()
+        return True
+    except Exception as e:
+        logger.warning(f"CUDA functionality test failed: {e}")
+        return False
+
+
 def load_model() -> bool:
     """
     Loads the TTS model.
@@ -57,20 +77,43 @@ def load_model() -> bool:
         return True
 
     try:
-        # Determine processing device
+        # Determine processing device with robust CUDA detection and intelligent fallback
         device_setting = config_manager.get_string("tts_engine.device", "auto")
+
         if device_setting == "auto":
-            resolved_device_str = "cuda" if torch.cuda.is_available() else "cpu"
-        elif device_setting in ["cuda", "cpu"]:
-            resolved_device_str = device_setting
+            if _test_cuda_functionality():
+                resolved_device_str = "cuda"
+                logger.info("CUDA functionality test passed. Using CUDA.")
+            else:
+                resolved_device_str = "cpu"
+                logger.info("CUDA not functional or not available. Using CPU.")
+
+        elif device_setting == "cuda":
+            if _test_cuda_functionality():
+                resolved_device_str = "cuda"
+                logger.info("CUDA requested and functional. Using CUDA.")
+            else:
+                resolved_device_str = "cpu"
+                logger.warning(
+                    "CUDA was requested in config but functionality test failed. "
+                    "PyTorch may not be compiled with CUDA support. "
+                    "Automatically falling back to CPU."
+                )
+
+        elif device_setting == "cpu":
+            resolved_device_str = "cpu"
+            logger.info("CPU device explicitly requested in config. Using CPU.")
+
         else:
             logger.warning(
-                f"Invalid device setting '{device_setting}', defaulting to auto-detection."
+                f"Invalid device setting '{device_setting}' in config. "
+                f"Defaulting to auto-detection."
             )
-            resolved_device_str = "cuda" if torch.cuda.is_available() else "cpu"
+            resolved_device_str = "cuda" if _test_cuda_functionality() else "cpu"
+            logger.info(f"Auto-detection resolved to: {resolved_device_str}")
 
         model_device = resolved_device_str
-        logger.info(f"Attempting to load TTS model on device: {model_device}")
+        logger.info(f"Final device selection: {model_device}")
 
         # Get configured model_repo_id for logging and context,
         # though from_pretrained might use its own internal default if not overridden.
@@ -88,7 +131,7 @@ def load_model() -> bool:
             # The actual repo ID used by from_pretrained is often internal to the library,
             # but logging the configured one provides user context.
             logger.info(
-                f"Successfully loaded TTS model using from_pretrained (expected from '{model_repo_id_config}' or library default)."
+                f"Successfully loaded TTS model using from_pretrained on {model_device} (expected from '{model_repo_id_config}' or library default)."
             )
         except Exception as e_hf:
             logger.error(
@@ -102,7 +145,7 @@ def load_model() -> bool:
         MODEL_LOADED = True
         if chatterbox_model:
             logger.info(
-                f"TTS Model loaded successfully. Engine sample rate: {chatterbox_model.sr} Hz."
+                f"TTS Model loaded successfully on {model_device}. Engine sample rate: {chatterbox_model.sr} Hz."
             )
         else:
             logger.error(

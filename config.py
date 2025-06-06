@@ -192,19 +192,19 @@ class YamlConfigManager:
         string paths in the configuration data to Path objects for internal use.
         The 'config_data' dictionary is modified in place.
         """
-        # Resolve TTS device setting.
+        # Resolve TTS device setting with robust CUDA detection.
         current_device_setting = _get_nested_value(
             config_data, ["tts_engine", "device"], "auto"
         )
         if current_device_setting == "auto":
-            resolved_device = "cuda" if torch.cuda.is_available() else "cpu"
+            resolved_device = self._detect_best_device()
             _set_nested_value(config_data, ["tts_engine", "device"], resolved_device)
         elif current_device_setting not in ["cuda", "cpu"]:
             logger.warning(
                 f"Invalid TTS device '{current_device_setting}' in configuration. "
                 f"Defaulting to auto-detection."
             )
-            resolved_device = "cuda" if torch.cuda.is_available() else "cpu"
+            resolved_device = self._detect_best_device()
             _set_nested_value(config_data, ["tts_engine", "device"], resolved_device)
 
         final_device = _get_nested_value(config_data, ["tts_engine", "device"])
@@ -225,6 +225,34 @@ class YamlConfigManager:
                             config_data, [section, key], Path(current_path_val)
                         )
         return config_data
+
+    def _detect_best_device(self) -> str:
+        """
+        Robustly detects the best available device for TTS processing.
+        Tests actual CUDA functionality rather than just checking availability.
+
+        Returns:
+            str: 'cuda' if CUDA is truly functional, 'cpu' otherwise.
+        """
+        if not torch.cuda.is_available():
+            logger.info(
+                "CUDA not available according to torch.cuda.is_available(). Using CPU."
+            )
+            return "cpu"
+
+        try:
+            # Actually test CUDA functionality by creating a tensor and moving it to CUDA
+            test_tensor = torch.tensor([1.0])
+            test_tensor = test_tensor.cuda()
+            test_tensor = test_tensor.cpu()  # Clean up
+            logger.info("CUDA test successful. Using CUDA device.")
+            return "cuda"
+        except Exception as e:
+            logger.warning(
+                f"CUDA is reported as available but failed functionality test: {e}. "
+                f"This usually means PyTorch was not compiled with CUDA support. Using CPU."
+            )
+            return "cpu"
 
     def _prepare_config_for_saving(self, config_dict: Dict[str, Any]) -> Dict[str, Any]:
         """
