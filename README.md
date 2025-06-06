@@ -376,7 +376,7 @@ Run Chatterbox TTS Server easily using Docker. The recommended method uses Docke
 
 *   [Docker](https://docs.docker.com/get-docker/) installed.
 *   [Docker Compose](https://docs.docker.com/compose/install/) installed (usually included with Docker Desktop).
-*   (Optional but Recommended for GPU) NVIDIA GPU with up-to-date drivers and the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) installed.
+*   **(Optional but Recommended for GPU)** NVIDIA GPU with up-to-date drivers and the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) installed.
 
 ### Using Docker Compose (Recommended)
 
@@ -405,15 +405,19 @@ This method uses `docker-compose.yml` to manage the container, volumes, and conf
         *   Start the container in detached mode (`-d`).
     *   The first time the image is built or the container runs, it might download models from Hugging Face Hub, which can take time. These will be cached in a Docker volume.
 
-4.  **Access the UI:**
+4.  **Troubleshooting GPU Errors:**
+    *   If you see an error like `CDI device injection failed`, your Docker environment may not support the modern GPU syntax.
+    *   **To fix this:** Open `docker-compose.yml`, comment out the `deploy` section, and uncomment the `runtime: nvidia` line as shown in the file's comments. Then run `docker compose up -d --build` again.
+
+5.  **Access the UI:**
     Open your web browser to `http://localhost:PORT` (e.g., `http://localhost:8004` or the host port you configured).
 
-5.  **View logs:**
+6.  **View logs:**
     ```bash
     docker compose logs -f
     ```
 
-6.  **Stop the container:**
+7.  **Stop the container:**
     ```bash
     docker compose down
     ```
