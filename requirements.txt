@@ -1,6 +1,8 @@
 # requirements.txt
 
-chatterbox-tts
+# Install chatterbox directly from the latest version on GitHub to get CPU fix
+git+https://github.com/resemble-ai/chatterbox.git
+#chatterbox-tts
 
 # Core Web Framework
 fastapi
