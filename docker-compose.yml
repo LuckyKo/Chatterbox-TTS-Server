@@ -3,6 +3,9 @@ version: '3.8'
 services:
   chatterbox-tts-server:
     build:
+      args:
+      # Can be NVIDIA or cpu; Default is Nvidia
+        - RUNTIME=nvidia
       context: .
       dockerfile: Dockerfile
     ports:
