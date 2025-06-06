@@ -263,7 +263,8 @@ The `requirements-rocm.txt` file works just like the NVIDIA one, but it points `
 2. **Select GPU runtime**: Runtime → Change runtime type → T4 GPU → Save
 3. **Run Cell 1**: Click the play button to install dependencies (~1-5 minutes)
 4. **Run Cell 2**: Start the server and access the Web UI via the provided links
-5. **Generate speech**: Use the web interface to create high-quality TTS audio
+5. **Wait for "Server ready! Click below" message**: Locate the "localhost:8004" link and click. This starts the Web UI in your browser
+6. **Generate speech**: Use the web interface to create high-quality TTS audio
 
 ### Notes:
 - **First run**: Takes a few minutes to download models (one-time only)
