@@ -2,7 +2,7 @@
 
 **Self-host the powerful [Chatterbox TTS model](https://github.com/resemble-ai/chatterbox) with this enhanced FastAPI server! Features an intuitive Web UI, a flexible API endpoint, voice cloning, large text processing via intelligent chunking, audiobook generation, and consistent, reproducible voices using built-in ready-to-use voices and a generation seed feature.**
 
-This server is based on the architecture and UI of our [Dia-TTS-Server](https://github.com/devnen/Dia-TTS-Server) project but uses the distinct `chatterbox-tts` engine. **Runs accelerated on NVIDIA (CUDA) and AMD (ROCm) GPUs, with a fallback to CPU.**
+This server is based on the architecture and UI of our [Dia-TTS-Server](https://github.com/devnen/Dia-TTS-Server) project but uses the distinct `chatterbox-tts` engine. Runs accelerated on NVIDIA (CUDA) and AMD (ROCm) GPUs, with a fallback to CPU.
 
 [![Project Link](https://img.shields.io/badge/GitHub-devnen/Chatterbox--TTS--Server-blue?style=for-the-badge&logo=github)](https://github.com/devnen/Chatterbox-TTS-Server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
