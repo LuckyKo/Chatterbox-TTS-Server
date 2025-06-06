@@ -765,7 +765,7 @@ async def custom_tts_endpoint(
             # ### MODIFICATION ###
             # All other processing is REMOVED from the loop.
             # We will process the final concatenated audio clip.
-            processed_audio_np = current_processed_audio_tensor.cpu().numpy()
+            processed_audio_np = current_processed_audio_tensor.cpu().numpy().squeeze()
             all_audio_segments_np.append(processed_audio_np)
 
         except HTTPException as http_exc:
