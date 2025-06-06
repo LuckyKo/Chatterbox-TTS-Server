@@ -1,33 +1,42 @@
-# requirements.txt
+# requirements.txt (For CPU-Only Installation)
+# This file ensures a compatible set of torch, torchvision, and torchaudio are installed for CPU.
 
-# Install chatterbox directly from the latest version on GitHub to get CPU fix
+# Use the official PyTorch CPU-only package index.
+--index-url https://download.pytorch.org/whl/cpu
+
+# Pinning a compatible set of torch-related libraries is crucial to avoid dependency conflicts.
+torch==2.3.1
+torchvision==0.18.1
+torchaudio==2.3.1
+
+# --- Core Application Dependencies ---
+
+# Install chatterbox directly from the latest version on GitHub.
 git+https://github.com/resemble-ai/chatterbox.git
-#chatterbox-tts
 
 # Core Web Framework
 fastapi
 uvicorn[standard]
 
-# Machine Learning & Audio
-torch
-torchaudio
-numpy
-soundfile # Requires libsndfile system library (e.g., sudo apt-get install libsndfile1 on Debian/Ubuntu)
-huggingface_hub
-descript-audio-codec
+# Other ML & Audio Libraries
+numpy==1.26.4
+soundfile  # Requires libsndfile system library
+librosa
 safetensors
+descript-audio-codec
 
 # Configuration & Utilities
-pydantic
-python-dotenv # Used ONLY for initial config seeding if config.yaml missing
+PyYAML
+python-multipart
+requests
 Jinja2
-python-multipart # For file uploads
-requests # For health checks or other potential uses
-PyYAML # For parsing presets.yaml AND primary config.yaml
+watchdog
+aiofiles
+unidecode
+inflect
 tqdm
 
 # Audio Post-processing
 pydub
-praat-parselmouth # For unvoiced segment removal
-librosa # for changes to sampling
-hf-transfer
+audiotsm
+parselmouth

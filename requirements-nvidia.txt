@@ -1,0 +1,43 @@
+# requirements-nvidia.txt (For NVIDIA GPU Installation with CUDA 12.1)
+# This file ensures a compatible set of CUDA-enabled torch packages are installed.
+
+# Use the official PyTorch package index for CUDA 12.1.
+--extra-index-url https://download.pytorch.org/whl/cu121
+
+# Pinning a compatible set of torch-related libraries is crucial to avoid dependency conflicts.
+# These versions are compatible with CUDA 12.1.
+torch==2.3.1
+torchvision==0.18.1
+torchaudio==2.3.1
+
+# --- Core Application Dependencies ---
+
+# Install chatterbox
+chatterbox-tts
+
+# Core Web Framework
+fastapi
+uvicorn[standard]
+
+# Other ML & Audio Libraries
+numpy==1.26.4
+soundfile  # Requires libsndfile system library
+librosa
+safetensors
+descript-audio-codec
+
+# Configuration & Utilities
+PyYAML
+python-multipart
+requests
+Jinja2
+watchdog
+aiofiles
+unidecode
+inflect
+tqdm
+
+# Audio Post-processing
+pydub
+audiotsm
+parselmouth

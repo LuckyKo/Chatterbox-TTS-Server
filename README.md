@@ -2,7 +2,7 @@
 
 **Self-host the powerful [Chatterbox TTS model](https://github.com/resemble-ai/chatterbox) with this enhanced FastAPI server! Features an intuitive Web UI, a flexible API endpoint, voice cloning, large text processing via intelligent chunking, audiobook generation, and consistent, reproducible voices using built-in ready-to-use voices and a generation seed feature.**
 
-This server is based on the architecture and UI of our [Dia-TTS-Server](https://github.com/devnen/Dia-TTS-Server) project but uses the distinct `chatterbox-tts` engine. Runs accelerated on NVIDIA GPUs (CUDA) with CPU fallback.
+This server is based on the architecture and UI of our [Dia-TTS-Server](https://github.com/devnen/Dia-TTS-Server) project but uses the distinct `chatterbox-tts` engine. **Runs accelerated on NVIDIA (CUDA) and AMD (ROCm) GPUs, with a fallback to CPU.**
 
 [![Project Link](https://img.shields.io/badge/GitHub-devnen/Chatterbox--TTS--Server-blue?style=for-the-badge&logo=github)](https://github.com/devnen/Chatterbox-TTS-Server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
@@ -11,13 +11,13 @@ This server is based on the architecture and UI of our [Dia-TTS-Server](https://
 [![Model Source](https://img.shields.io/badge/Model-ResembleAI/chatterbox-orange.svg?style=for-the-badge)](https://github.com/resemble-ai/chatterbox)
 [![Docker](https://img.shields.io/badge/Docker-Supported-blue.svg?style=for-the-badge)](https://www.docker.com/)
 [![Web UI](https://img.shields.io/badge/Web_UI-Included-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](#)
-[![CUDA Compatible](https://img.shields.io/badge/CUDA-Compatible-76B900?style=for-the-badge&logo=nvidia&logoColor=white)](https://developer.nvidia.com/cuda-zone)
-[![Model Format](https://img.shields.io/badge/Weights-SafeTensors%20/%20pth-orange.svg?style=for-the-badge)](https://github.com/huggingface/safetensors)
+[![CUDA Compatible](https://img.shields.io/badge/NVIDIA_CUDA-Compatible-76B900?style=for-the-badge&logo=nvidia&logoColor=white)](https://developer.nvidia.com/cuda-zone)
+[![ROCm Compatible](https://img.shields.io/badge/AMD_ROCm-Compatible-ED1C24?style=for-the-badge&logo=amd&logoColor=white)](https://rocm.docs.amd.com/)
 [![API](https://img.shields.io/badge/OpenAI_Compatible_API-Ready-000000?style=for-the-badge&logo=openai&logoColor=white)](https://platform.openai.com/docs/api-reference)
 
 <div align="center">
-  <img src="static/screenshot-d.png" alt="Dia TTS Server Web UI - Dark Mode" width="33%" />
-  <img src="static/screenshot-l.png" alt="Dia TTS Server Web UI - Light Mode" width="33%" />
+  <img src="static/screenshot-d.png" alt="Chatterbox TTS Server Web UI - Dark Mode" width="33%" />
+  <img src="static/screenshot-l.png" alt="Chatterbox TTS Server Web UI - Light Mode" width="33%" />
 </div>
 
 ---
@@ -28,15 +28,14 @@ The [Chatterbox TTS model by Resemble AI](https://github.com/resemble-ai/chatter
 
 We solve the complexity of setting up and running the model by offering:
 
-*   A **modern Web UI** for easy experimentation, preset loading, reference audio management, and generation parameter tuning. The interface design draws inspiration from projects like [Lex-au's Orpheus-FastAPI](https://github.com/Lex-au/Orpheus-FastAPI).
+*   A **modern Web UI** for easy experimentation, preset loading, reference audio management, and generation parameter tuning.
+*   **Multi-Platform Acceleration:** Full support for **NVIDIA (CUDA)** and **AMD (ROCm)** GPUs, with an automatic fallback to **CPU**, ensuring you can run on any hardware.
 *   **Large Text Handling:** Intelligently splits long plain text inputs into manageable chunks based on sentence structure, processes them sequentially, and seamlessly concatenates the audio.
 *   **📚 Audiobook Generation:** Perfect for creating complete audiobooks - simply paste an entire book's text and the server automatically processes it into a single, seamless audio file with consistent voice quality throughout.
 *   **Predefined Voices:** Select from curated, ready-to-use synthetic voices for consistent and reliable output without cloning setup.
 *   **Voice Cloning:** Generate speech using a voice similar to an uploaded reference audio file.
 *   **Consistent Generation:** Achieve consistent voice output across multiple generations or text chunks by using the "Predefined Voices" or "Voice Cloning" modes, optionally combined with a fixed integer **Seed**.
-*   Automatic **GPU (CUDA) acceleration** detection with fallback to CPU.
-*   Configuration exclusively via `config.yaml`.
-*   **Docker support** for easy containerized deployment with [Docker](https://www.docker.com/).
+*   **Docker support** for easy, reproducible containerized deployment on any platform.
 
 This server is your gateway to leveraging Chatterbox's TTS capabilities seamlessly, with enhanced stability, voice consistency, and large text support for plain text inputs.
 
@@ -128,95 +127,111 @@ This server application enhances the underlying `chatterbox-tts` engine with the
 *   **(Optional but HIGHLY Recommended for Performance):**
     *   **NVIDIA GPU:** CUDA-compatible (Maxwell architecture or newer). Check [NVIDIA CUDA GPUs](https://developer.nvidia.com/cuda-gpus).
     *   **NVIDIA Drivers:** Latest version for your GPU/OS ([Download](https://www.nvidia.com/Download/index.aspx)).
-    *   **CUDA Toolkit:** Compatible version (e.g., 11.8, 12.1+) matching the PyTorch build you install.
-    *   **AMD GPU:** ROCm-compatible. Check [AMD ROCm GPUs](https://rocm.docs.amd.com/en/latest/reference/gpu-arch-specs.html).
+    *   **AMD GPU:** ROCm-compatible (e.g., RX 6000/7000 series). Check [AMD ROCm GPUs](https://rocm.docs.amd.com/en/latest/reference/gpu-arch-specs.html).
+    *   **AMD Drivers:** Latest ROCm-compatible drivers for your GPU/OS.
 *   **(Linux Only):**
     *   `libsndfile1`: Audio library needed by `soundfile`. Install via package manager (e.g., `sudo apt install libsndfile1`).
     *   `ffmpeg`: For robust audio operations (optional but recommended). Install via package manager (e.g., `sudo apt install ffmpeg`).
 
 ## 💻 Installation and Setup
 
-Follow these steps carefully to get the server running.
+This project uses specific dependency files to ensure a smooth, one-command installation for your hardware. Follow the path that matches your system.
 
 **1. Clone the Repository**
 ```bash
-git clone https://github.com/devnen/chatterbox-tts-server.git
-cd chatterbox-tts-server
+git clone https://github.com/devnen/Chatterbox-TTS-Server.git
+cd Chatterbox-TTS-Server
 ```
 
-**2. Set up Python Virtual Environment**
+**2. Create a Python Virtual Environment**
 
-Using a virtual environment is crucial!
+Using a virtual environment is crucial to avoid conflicts with other projects.
 
 *   **Windows (PowerShell):**
     ```powershell
-    # In the chatterbox-tts-server directory
     python -m venv venv
     .\venv\Scripts\activate
-    # Your prompt should now start with (venv)
     ```
 
-*   **Linux (Bash - Debian/Ubuntu Example):**
+*   **Linux (Bash):**
     ```bash
-    # Ensure prerequisites are installed
-    sudo apt update && sudo apt install python3 python3-venv python3-pip libsndfile1 ffmpeg -y
-
-    # In the chatterbox-tts-server directory
     python3 -m venv venv
     source venv/bin/activate
-    # Your prompt should now start with (venv)
     ```
+    Your command prompt should now start with `(venv)`.
 
-**3. Install Dependencies**
+**3. Choose Your Installation Path**
 
-Make sure your virtual environment is activated (`(venv)` prefix visible).
+Pick one of the following commands based on your hardware. This single command will install all necessary dependencies with compatible versions.
+
+---
+
+### **Option 1: CPU-Only Installation**
+
+This is the most straightforward option and works on any machine without a compatible GPU.
 
 ```bash
-# Upgrade pip (recommended)
+# Make sure your (venv) is active
 pip install --upgrade pip
-
-# Install project requirements
 pip install -r requirements.txt
-
-# Or if using ROCm - installs ROCm 6.4.1 version of torch, torchaudio, and pytorch-triton-rocm
-pip --pre install -r requirements-rocm.txt
 ```
-⭐ **Note:** This installation includes large libraries like PyTorch and `chatterbox-tts`. The download and installation process may take some time depending on your internet speed and system performance.
 
-⭐ **Important:** The `requirements.txt` typically installs a CPU-compatible version of PyTorch. If you have an NVIDIA GPU, proceed to Step 4 **before** running the server for GPU acceleration.
+<details>
+<summary><strong>💡 How This Works</strong></summary>
+The `requirements.txt` file is specially crafted for CPU users. It tells `pip` to use PyTorch's CPU-specific package repository and pins compatible versions of `torch` and `torchvision`. This prevents `pip` from installing mismatched versions, which is a common source of errors.
+</details>
 
-**4. NVIDIA Driver and CUDA Setup (for GPU Acceleration)**
+---
 
-Skip this step if you only have a CPU.
+### **Option 2: NVIDIA GPU Installation (CUDA)**
 
-*   **Step 4a: Check/Install NVIDIA Drivers**
-    *   Run `nvidia-smi` in your terminal/command prompt.
-    *   If it works, note the **CUDA Version** listed (e.g., 12.1, 11.8). This is the *maximum* your driver supports.
-    *   If it fails, download and install the latest drivers from [NVIDIA Driver Downloads](https://www.nvidia.com/Download/index.aspx) and **reboot**. Verify with `nvidia-smi` again.
+For users with NVIDIA GPUs. This provides the best performance.
 
-*   **Step 4b: Install PyTorch with CUDA Support**
-    *   Go to the [Official PyTorch Website](https://pytorch.org/get-started/locally/).
-    *   Use the configuration tool: Select **Stable**, **Windows/Linux**, **Pip**, **Python**, and the **CUDA version** that is **equal to or lower** than the one shown by `nvidia-smi` (e.g., if `nvidia-smi` shows 12.4, choose CUDA 12.1).
-    *   Copy the generated command (it will include `--index-url https://download.pytorch.org/whl/cuXXX`).
-    *   **In your activated `(venv)`:**
-        ```bash
-        # Uninstall the CPU version first (if any was installed by requirements.txt directly)
-        pip uninstall torch torchvision torchaudio -y
+**Prerequisite:** Ensure you have the latest NVIDIA drivers installed.
 
-        # Paste and run the command copied from the PyTorch website
-        # Example (replace with your actual command for your CUDA version):
-        pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
-        ```
-    *   ⚠️ **Important: You can safely ignore potential dependency conflicts:**
-        After running the command above to install a specific CUDA-enabled PyTorch version, `pip` might display "ERROR: pip's dependency resolver..." messages, often indicating that `chatterbox-tts` (or another package) requires a different version of `torch` or `torchaudio` than the one you just installed (e.g., `chatterbox-tts X.Y.Z requires torch==A.B.C, but you have torch A.B.D+cuXYZ which is incompatible`).
-        **For these specific errors related to `torch` and `torchaudio` versions after installing the CUDA variant:** If the CUDA verification in Step 4c is successful (i.e., `torch.cuda.is_available()` returns `True`), these particular dependency conflict messages from `pip` can often be **safely ignored**. The server should still run correctly with GPU acceleration. The key is that PyTorch itself recognizes your CUDA setup.
+```bash
+# Make sure your (venv) is active
+pip install --upgrade pip
+pip install -r requirements-nvidia.txt
+```
 
-*   **Step 4c: Verify PyTorch CUDA Installation**
-    *   In your activated `(venv)`, run `python` and execute the following single line:
-        ```python
-        import torch; print(f"PyTorch version: {torch.__version__}"); print(f"CUDA available: {torch.cuda.is_available()}"); print(f"Device name: {torch.cuda.get_device_name(0)}") if torch.cuda.is_available() else None; exit()
-        ```
-    *   If `CUDA available:` shows `True`, the setup was successful. If `False`, double-check driver installation and the PyTorch install command, and ensure you are in the correct virtual environment.
+**After installation, verify that PyTorch can see your GPU:**
+```bash
+python -c "import torch; print(f'PyTorch version: {torch.__version__}'); print(f'CUDA available: {torch.cuda.is_available()}'); print(f'Device name: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else None}')"
+```
+If `CUDA available:` shows `True`, your setup is correct!
+
+<details>
+<summary><strong>💡 How This Works</strong></summary>
+The `requirements-nvidia.txt` file instructs `pip` to use PyTorch's official CUDA 12.1 package repository. It pins specific, compatible versions of `torch`, `torchvision`, and `torchaudio` that are built with CUDA support. This guarantees that the versions required by `chatterbox-tts` are met with the correct GPU-enabled libraries, preventing conflicts.
+</details>
+
+---
+
+### **Option 3: AMD GPU Installation (ROCm)**
+
+For users with modern, ROCm-compatible AMD GPUs.
+
+**Prerequisite:** Ensure you have the latest ROCm drivers installed on a Linux system.
+
+```bash
+# Make sure your (venv) is active
+pip install --upgrade pip
+pip install -r requirements-rocm.txt
+```
+
+**After installation, verify that PyTorch can see your GPU:**
+```bash
+python -c "import torch; print(f'PyTorch version: {torch.__version__}'); print(f'ROCm available: {torch.cuda.is_available()}'); print(f'Device name: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else None}')"
+```
+If `ROCm available:` shows `True`, your setup is correct!
+
+<details>
+<summary><strong>💡 How This Works</strong></summary>
+The `requirements-rocm.txt` file works just like the NVIDIA one, but it points `pip` to PyTorch's official ROCm 5.7 package repository. This ensures that the correct GPU-enabled libraries for AMD hardware are installed, providing a stable and performant environment.
+</details>
+
+---
 
 ## ⚙️ Configuration
 
@@ -269,7 +284,7 @@ Follow these steps to update your existing installation to the latest version fr
 
 **1. Navigate to Your Project Directory**
 ```bash
-cd chatterbox-tts-server
+cd Chatterbox-TTS-Server
 ```
 
 **2. Activate Your Virtual Environment**
@@ -277,13 +292,11 @@ cd chatterbox-tts-server
 *   **Windows (PowerShell):**
     ```powershell
     .\venv\Scripts\activate
-    # Your prompt should now start with (venv)
     ```
 
 *   **Linux (Bash):**
     ```bash
     source venv/bin/activate
-    # Your prompt should now start with (venv)
     ```
 
 **3. Backup Your Configuration**
@@ -321,37 +334,26 @@ cp config.yaml.backup config.yaml
 
 **6. Check for New Configuration Options**
 
-⭐ **Recommended:** Compare your restored config with the new default config to see if there are new options you might want to adopt:
-
-```bash
-# View differences between your config and the new default
-# (The new default is temporarily in config.yaml.backup if you used force update)
-# Or check the repository's config.yaml to see what changed
-```
+⭐ **Recommended:** Compare your restored config with the new default config to see if there are new options you might want to adopt.
 
 **7. Update Dependencies**
 
-⭐ **Important:** Always update dependencies after pulling changes, as new versions may include additional or updated packages.
+⭐ **Important:** Always update dependencies after pulling changes. Choose the command that matches your hardware.
 
-```bash
-# Upgrade pip (recommended)
-pip install --upgrade pip
+*   **For CPU-Only Systems:**
+    ```bash
+    pip install -r requirements.txt
+    ```
+*   **For NVIDIA GPU Systems:**
+    ```bash
+    pip install -r requirements-nvidia.txt
+    ```
+*   **For AMD GPU Systems:**
+    ```bash
+    pip install -r requirements-rocm.txt
+    ```
 
-# Install/update project requirements
-pip install -r requirements.txt
-```
-
-**8. GPU Users: Verify PyTorch Installation**
-
-If you have an NVIDIA GPU and previously installed CUDA-enabled PyTorch, verify it's still correctly installed:
-
-```bash
-python -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}')"
-```
-
-If `CUDA available: False`, you may need to reinstall PyTorch with CUDA support following **Step 4** from the Installation section.
-
-**9. Restart the Server**
+**8. Restart the Server**
 
 If the server was running, stop it (`CTRL+C`) and restart:
 
@@ -370,56 +372,65 @@ docker compose up -d --build
 
 ## 🐳 Docker Installation
 
-Run Chatterbox TTS Server easily using Docker. The recommended method uses Docker Compose.
+Run Chatterbox TTS Server easily using Docker. The recommended method uses Docker Compose, which is pre-configured for different GPU types.
 
 ### Prerequisites
 
 *   [Docker](https://docs.docker.com/get-docker/) installed.
 *   [Docker Compose](https://docs.docker.com/compose/install/) installed (usually included with Docker Desktop).
-*   **(Optional but Recommended for GPU)** NVIDIA GPU with up-to-date drivers and the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) installed.
+*   **(For GPU)**
+    *   **NVIDIA:** Up-to-date drivers and the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) installed.
+    *   **AMD:** Up-to-date ROCm drivers installed on a Linux host.
 
 ### Using Docker Compose (Recommended)
 
-This method uses `docker-compose.yml` to manage the container, volumes, and configuration easily.
+This method uses the provided `docker-compose.yml` files to manage the container, volumes, and configuration easily.
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/devnen/chatterbox-tts-server.git
-    cd chatterbox-tts-server
+    git clone https://github.com/devnen/Chatterbox-TTS-Server.git
+    cd Chatterbox-TTS-Server
     ```
 
-2.  **Review `docker-compose.yml`:**
-    *   The repository includes a `docker-compose.yml` file for CPU and NVIDIA GPU and `docker-compose-rocm.yml` for ROCm GPU. Ensure it's configured for your needs (image source, ports, volumes). The provided one in this project is a good starting point.
+2.  **Start the container based on your hardware:**
 
-3.  **Start the container:**
-    ```bash
-    # For CPU and NVIDIA GPU
-    docker compose up -d --build
+    *   **For NVIDIA GPU (or CPU-only):**
+        The default `docker-compose.yml` is configured for NVIDIA GPUs and will fall back to CPU if a GPU is not available.
+        ```bash
+        docker compose up -d --build
+        ```
 
-    # For ROCm GPU
-    docker compose -f docker-compose-rocm.yml up -d --build
-    ```
-    *   This command will:
-        *   Build the Docker image using `Dockerfile` (if not using a pre-built image).
-        *   Create local directories specified in volumes (e.g., `voices`, `reference_audio`) if they don't exist on your host.
-        *   Start the container in detached mode (`-d`).
-    *   The first time the image is built or the container runs, it might download models from Hugging Face Hub, which can take time. These will be cached in a Docker volume.
+    *   **For AMD ROCm GPU:**
+        Use the `docker-compose-rocm.yml` file, which is specifically configured for AMD GPUs.
+        ```bash
+        docker compose -f docker-compose-rocm.yml up -d --build
+        ```
 
-4.  **Troubleshooting GPU Errors:**
+    *   The first time you run this, Docker will build the image, which involves downloading all dependencies. This can take some time. Subsequent starts will be much faster.
+
+3.  **Troubleshooting NVIDIA GPU Errors:**
     *   If you see an error like `CDI device injection failed`, your Docker environment may not support the modern GPU syntax.
     *   **To fix this:** Open `docker-compose.yml`, comment out the `deploy` section, and uncomment the `runtime: nvidia` line as shown in the file's comments. Then run `docker compose up -d --build` again.
 
-5.  **Access the UI:**
+4.  **Access the UI:**
     Open your web browser to `http://localhost:PORT` (e.g., `http://localhost:8004` or the host port you configured).
 
-6.  **View logs:**
+5.  **View logs:**
     ```bash
+    # For NVIDIA/CPU
     docker compose logs -f
+
+    # For AMD
+    docker compose -f docker-compose-rocm.yml logs -f
     ```
 
-7.  **Stop the container:**
+6.  **Stop the container:**
     ```bash
+    # For NVIDIA/CPU
     docker compose down
+
+    # For AMD
+    docker compose -f docker-compose-rocm.yml down
     ```
 
 ### Configuration in Docker
@@ -545,5 +556,3 @@ You can find it here: [https://opensource.org/licenses/MIT](https://opensource.o
     *   [Jinja2](https://jinja.palletsprojects.com/)
     *   [WaveSurfer.js](https://wavesurfer.xyz/)
     *   [Tailwind CSS](https://tailwindcss.com/) (via CDN)
-
----
