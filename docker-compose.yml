@@ -5,7 +5,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-
     ports:
       - "${PORT:-8004}:8004"
     volumes:
@@ -16,26 +15,25 @@ services:
       - ./reference_audio:/app/reference_audio
       - ./outputs:/app/outputs
       - ./logs:/app/logs
+      # Named volume for Hugging Face model cache to persist across container rebuilds
+      - hf_cache:/app/hf_cache
+    
+    # --- GPU Support (NVIDIA) ---
+    # The 'deploy' key is the modern way to request GPU resources.
+    # If you get a 'CDI device injection failed' error, comment out the 'deploy' section
+    # and uncomment the 'runtime: nvidia' line below.
+    
+    # Method 1: Modern Docker Compose (Recommended)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
 
-    # --- GPU Access ---
-    # Modern method (Recommended for newer Docker/NVIDIA setups)
-    devices:
-      - nvidia.com/gpu=all
-    device_cgroup_rules:
-      - "c 195:* rmw" # Needed for some NVIDIA container toolkit versions
-      - "c 236:* rmw" # Needed for some NVIDIA container toolkit versions
-
-    # Legacy method (Alternative for older Docker/NVIDIA setups)
-    # If the 'devices' block above doesn't work, comment it out and uncomment
-    # the 'deploy' block below. Do not use both simultaneously.
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1 # Or specify specific GPUs e.g., "device=0,1"
-    #           capabilities: [gpu]
-    # --- End GPU Access ---
+    # Method 2: Legacy Docker Compose (for older setups)
+    # runtime: nvidia
 
     restart: unless-stopped
     environment:
@@ -44,3 +42,7 @@ services:
       # Make NVIDIA GPUs visible and specify capabilities for PyTorch
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+
+# Define the named volume for the Hugging Face cache
+volumes:
+  hf_cache:
