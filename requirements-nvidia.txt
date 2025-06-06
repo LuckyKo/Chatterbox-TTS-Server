@@ -5,22 +5,22 @@
 --extra-index-url https://download.pytorch.org/whl/cu121
 
 # Pinning a compatible set of torch-related libraries is crucial to avoid dependency conflicts.
-# These versions are compatible with CUDA 12.1.
-torch==2.3.1
-torchvision==0.18.1
-torchaudio==2.3.1
+# Updated to use PyTorch 2.5.1 for compatibility with our Colab-compatible chatterbox fork
+torch==2.5.1
+torchvision==0.20.1  # Compatible with torch 2.5.1
+torchaudio==2.5.1
 
 # --- Core Application Dependencies ---
 
-# Install chatterbox
-chatterbox-tts
+# Install chatterbox from our Colab-compatible fork instead of PyPI
+git+https://github.com/devnen/chatterbox.git
 
 # Core Web Framework
 fastapi
 uvicorn[standard]
 
 # Other ML & Audio Libraries
-numpy==1.26.4
+numpy>=1.26.0,<3.0.0  # More flexible to avoid conflicts
 soundfile  # Requires libsndfile system library
 librosa
 safetensors
