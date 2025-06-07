@@ -41,6 +41,8 @@ python-multipart               # Form data parsing for FastAPI
 requests                       # HTTP client library
 Jinja2                        # Template engine
 aiofiles                      # Async file operations
+# hf_transfer                     # Speed up file transfers with the Hugging Face Hub.
+
 
 # --- Configuration & Data Processing ---
 PyYAML                        # YAML configuration file support
