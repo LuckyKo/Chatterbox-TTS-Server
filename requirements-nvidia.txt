@@ -36,6 +36,7 @@ aiofiles
 unidecode
 inflect
 tqdm
+hf_transfer                     # Speed up file transfers
 
 # Audio Post-processing
 pydub
