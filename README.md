@@ -412,86 +412,6 @@ docker compose pull  # if using pre-built images
 docker compose up -d --build
 ```
 
-## 🐳 Docker Installation
-
-Run Chatterbox TTS Server easily using Docker. The recommended method uses Docker Compose, which is pre-configured for different GPU types.
-
-### Prerequisites
-
-*   [Docker](https://docs.docker.com/get-docker/) installed.
-*   [Docker Compose](https://docs.docker.com/compose/install/) installed (usually included with Docker Desktop).
-*   **(For GPU)**
-    *   **NVIDIA:** Up-to-date drivers and the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) installed.
-    *   **AMD:** Up-to-date ROCm drivers installed on a Linux host.
-
-### Using Docker Compose (Recommended)
-
-This method uses the provided `docker-compose.yml` files to manage the container, volumes, and configuration easily.
-
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/devnen/Chatterbox-TTS-Server.git
-    cd Chatterbox-TTS-Server
-    ```
-
-2.  **Start the container based on your hardware:**
-
-    *   **For NVIDIA GPU (or CPU-only):**
-        The default `docker-compose.yml` is configured for NVIDIA GPUs and will fall back to CPU if a GPU is not available.
-        ```bash
-        docker compose up -d --build
-        ```
-
-    *   **For AMD ROCm GPU:**
-        Use the `docker-compose-rocm.yml` file, which is specifically configured for AMD GPUs.
-        ```bash
-        docker compose -f docker-compose-rocm.yml up -d --build
-        ```
-
-    *   The first time you run this, Docker will build the image, which involves downloading all dependencies. This can take some time. Subsequent starts will be much faster.
-
-3.  **Troubleshooting NVIDIA GPU Errors:**
-    *   If you see an error like `CDI device injection failed`, your Docker environment may not support the modern GPU syntax.
-    *   **To fix this:** Open `docker-compose.yml`, comment out the `deploy` section, and uncomment the `runtime: nvidia` line as shown in the file's comments. Then run `docker compose up -d --build` again.
-
-4.  **Access the UI:**
-    Open your web browser to `http://localhost:PORT` (e.g., `http://localhost:8004` or the host port you configured).
-
-5.  **View logs:**
-    ```bash
-    # For NVIDIA/CPU
-    docker compose logs -f
-
-    # For AMD
-    docker compose -f docker-compose-rocm.yml logs -f
-    ```
-
-6.  **Stop the container:**
-    ```bash
-    # For NVIDIA/CPU
-    docker compose down
-
-    # For AMD
-    docker compose -f docker-compose-rocm.yml down
-    ```
-
-### Configuration in Docker
-
-*   The server uses `config.yaml` for its settings. The `docker-compose.yml` should mount your local `config.yaml` to `/app/config.yaml` inside the container.
-*   If `config.yaml` does not exist locally when you first start, the application inside the container will create a default one (based on `config.py`), which will then appear in your local directory due to the volume mount.
-*   You can then edit this local `config.yaml`. Changes to server/model/path settings typically require a container restart (`docker compose restart chatterbox-tts-server`). UI state changes are often saved live by the app.
-
-### Docker Volumes
-
-Persistent data is stored on your host machine via volume mounts defined in `docker-compose.yml`:
-
-*   `./config.yaml:/app/config.yaml` (Main application configuration)
-*   `./voices:/app/voices` (Predefined voice audio files)
-*   `./reference_audio:/app/reference_audio` (Your uploaded reference audio files for cloning)
-*   `./outputs:/app/outputs` (Generated audio files saved from UI/API)
-*   `./logs:/app/logs` (Server log files)
-*   `hf_cache:/app/hf_cache` (Named volume for Hugging Face model cache to persist downloads, matching `HF_HOME` in Dockerfile)
-
 ## 💡 Usage
 
 ### Web UI (`http://localhost:PORT`)
@@ -538,6 +458,200 @@ The primary endpoint for TTS generation is `/tts`, which offers detailed control
     *   `GET /get_predefined_voices`: Lists formatted voices from `voices/`.
     *   `POST /upload_reference`: Uploads reference audio files.
     *   `POST /upload_predefined_voice`: Uploads predefined voice files.
+
+# 🐳 Docker Installation
+
+Run Chatterbox TTS Server easily using Docker. The recommended method uses Docker Compose, which is pre-configured for different GPU types.
+
+## Prerequisites
+
+*   [Docker](https://docs.docker.com/get-docker/) installed.
+*   [Docker Compose](https://docs.docker.com/compose/install/) installed (usually included with Docker Desktop).
+*   **(For GPU acceleration)**
+    *   **NVIDIA:** Up-to-date drivers and the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) installed.
+    *   **AMD:** Up-to-date [ROCm drivers](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/) installed on a Linux host. User must be in `video` and `render` groups.
+
+## Using Docker Compose (Recommended)
+
+This method uses the provided `docker-compose.yml` files to manage the container, volumes, and configuration easily.
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/devnen/Chatterbox-TTS-Server.git
+cd Chatterbox-TTS-Server
+```
+
+### 2. Start the Container Based on Your Hardware
+
+#### **For NVIDIA GPU:**
+The default `docker-compose.yml` is configured for NVIDIA GPUs and will fall back to CPU if a GPU is not available.
+```bash
+docker compose up -d --build
+```
+
+#### **For AMD ROCm GPU (Linux only):**
+**Prerequisites:** Ensure you have [ROCm drivers](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/) installed on your host system and your user is in the required groups:
+```bash
+# Add your user to required groups (one-time setup)
+sudo usermod -a -G video,render $USER
+# Log out and back in for changes to take effect
+```
+
+**Start the container:**
+```bash
+docker compose -f docker-compose-rocm.yml up -d --build
+```
+
+#### **For CPU-only:**
+```bash
+TTS_RUNTIME=cpu docker compose up -d --build
+```
+
+⭐ **Note:** The first time you run this, Docker will build the image and download model files, which can take some time. Subsequent starts will be much faster.
+
+### 3. Access the Application
+Open your web browser to `http://localhost:PORT` (e.g., `http://localhost:8004` or the host port you configured).
+
+### 4. Verify GPU Access
+
+#### **For NVIDIA GPU:**
+```bash
+# Check if container can see NVIDIA GPU
+docker compose exec chatterbox-tts-server nvidia-smi
+
+# Verify PyTorch can access the GPU
+docker compose exec chatterbox-tts-server python3 -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}'); print(f'GPU count: {torch.cuda.device_count()}')"
+```
+
+#### **For AMD ROCm GPU:**
+```bash
+# Check if container can see AMD GPU
+docker compose -f docker-compose-rocm.yml exec chatterbox-tts-server rocm-smi
+
+# Verify PyTorch can access the GPU  
+docker compose -f docker-compose-rocm.yml exec chatterbox-tts-server python3 -c "import torch; print(f'ROCm available: {torch.cuda.is_available()}'); print(f'Device name: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else \"No GPU detected\"}')"
+```
+
+### 5. View Logs and Manage Container
+```bash
+# View logs
+docker compose logs -f  # For NVIDIA/CPU
+docker compose -f docker-compose-rocm.yml logs -f  # For AMD
+
+# Stop the container
+docker compose down  # For NVIDIA/CPU
+docker compose -f docker-compose-rocm.yml down  # For AMD
+
+# Restart the container
+docker compose restart chatterbox-tts-server  # For NVIDIA/CPU
+docker compose -f docker-compose-rocm.yml restart chatterbox-tts-server  # For AMD
+```
+
+## AMD ROCm Support Details
+
+### **GPU Architecture Override (Advanced Users)**
+
+If your AMD GPU is not officially supported by ROCm but is similar to a supported architecture, you can override the detected architecture:
+
+```bash
+# For RX 5000/6000 series (gfx10xx) - override to gfx1030
+HSA_OVERRIDE_GFX_VERSION=10.3.0 docker compose -f docker-compose-rocm.yml up -d
+
+# For RX 7000 series (gfx11xx) - override to gfx1100  
+HSA_OVERRIDE_GFX_VERSION=11.0.0 docker compose -f docker-compose-rocm.yml up -d
+
+# For Vega cards - override to gfx906
+HSA_OVERRIDE_GFX_VERSION=9.0.6 docker compose -f docker-compose-rocm.yml up -d
+```
+
+**Check your GPU architecture:**
+```bash
+# Method 1: Using rocminfo (if ROCm installed on host)
+rocminfo | grep "Name:"
+
+# Method 2: Using lspci
+lspci | grep VGA
+```
+
+**Common GPU Architecture Mappings:**
+- **RX 7900 XTX/XT, RX 7800 XT, RX 7700 XT:** gfx1100 → Use `HSA_OVERRIDE_GFX_VERSION=11.0.0`
+- **RX 6900 XT, RX 6800 XT, RX 6700 XT, RX 6600 XT:** gfx1030-1032 → Use `HSA_OVERRIDE_GFX_VERSION=10.3.0`
+- **RX 5700 XT, RX 5600 XT:** gfx1010 → Use `HSA_OVERRIDE_GFX_VERSION=10.3.0`
+- **Vega 64, Vega 56:** gfx900-906 → Use `HSA_OVERRIDE_GFX_VERSION=9.0.6`
+
+### **ROCm Compatibility Notes**
+
+*   **Supported GPUs:** AMD Instinct data center GPUs and select Radeon GPUs. Check the [ROCm compatibility list](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/reference/system-requirements.html#supported-gpus).
+*   **Operating System:** ROCm is currently supported only on Linux systems.
+*   **Performance:** AMD GPUs with ROCm provide excellent performance for ML workloads, with support for mixed-precision training.
+*   **PyTorch Version:** Uses PyTorch 2.6.0 with ROCm 6.4.1 for optimal compatibility and performance.
+
+## Troubleshooting
+
+### **NVIDIA GPU Issues:**
+*   **GPU not detected:** Check `nvidia-smi` works on host, ensure Container Toolkit is installed
+*   **CDI device injection failed:** Open `docker-compose.yml`, comment out the `deploy` section, and uncomment the `runtime: nvidia` line as shown in the file's comments
+*   **CUDA out of memory:** Close other GPU applications, reduce `chunk_size` in the UI for long texts
+
+### **AMD ROCm Issues:**
+*   **GPU not detected:** 
+    - Ensure ROCm drivers are installed on host: `sudo apt install rocm-dkms rocm-libs`
+    - Verify your GPU is ROCm-compatible
+    - Check user groups: `groups $USER` should include `video` and `render`
+*   **Permission errors:** 
+    ```bash
+    sudo usermod -a -G video,render $USER
+    # Log out and back in
+    ```
+*   **Architecture not supported:** Use `HSA_OVERRIDE_GFX_VERSION` override as shown above
+*   **Still having issues:** Uncomment the "Enhanced ROCm Access" section in `docker-compose-rocm.yml`:
+    ```yaml
+    privileged: true
+    cap_add:
+      - SYS_PTRACE
+    devices:
+      - /dev/mem
+    ```
+
+### **General Docker Issues:**
+*   **Port conflict:** Change `PORT` environment variable: `PORT=8005 docker compose up -d`
+*   **Build failures:** Ensure stable internet connection for downloading dependencies
+*   **Permission errors:** Check that Docker daemon is running and user is in `docker` group
+*   **Disk space:** Docker images and model cache can use several GB
+
+## Configuration in Docker
+
+*   **Main config:** The server uses `config.yaml` for settings. The docker-compose files mount your local `config.yaml` to `/app/config.yaml` inside the container.
+*   **First run:** If `config.yaml` doesn't exist locally, the application will create a default one with sensible defaults.
+*   **Editing config:** You can edit the local `config.yaml` directly. Changes to server/model/path settings require a container restart:
+    ```bash
+    docker compose restart chatterbox-tts-server
+    ```
+*   **UI settings:** Changes to generation defaults and UI state are often saved automatically by the application.
+
+## Docker Volumes
+
+Persistent data is stored on your host machine via volume mounts:
+
+*   `./config.yaml:/app/config.yaml` - Main application configuration
+*   `./voices:/app/voices` - Predefined voice audio files  
+*   `./reference_audio:/app/reference_audio` - Your uploaded reference audio files for cloning
+*   `./outputs:/app/outputs` - Generated audio files saved from UI/API
+*   `./logs:/app/logs` - Server log files
+*   `hf_cache:/app/hf_cache` - Named volume for Hugging Face model cache (persists downloads)
+
+**Managing volumes:**
+```bash
+# Remove all data (including downloaded models)
+docker compose down -v
+
+# Remove only application data (keep model cache)
+docker compose down
+sudo rm -rf voices/ reference_audio/ outputs/ logs/ config.yaml
+
+# View volume usage
+docker system df
+```
 
 ## 🔍 Troubleshooting
 

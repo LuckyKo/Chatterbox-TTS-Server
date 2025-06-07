@@ -5,7 +5,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.rocm
-
     ports:
       - "${PORT:-8004}:8004"
     volumes:
@@ -16,32 +15,36 @@ services:
       - ./reference_audio:/app/reference_audio
       - ./outputs:/app/outputs
       - ./logs:/app/logs
+      - hf_cache:/app/hf_cache
 
-    # --- GPU Access ---
-    # Depending on your system setup you might need to uncomment and/or modify the line below to
-    # permit access to the image
-    ipc: host
-    privileged: true
-    security_opt:
-      - seccomp=unconfined
-    cap_add:
-      - SYS_PTRACE
-      - CAP_SYS_ADMIN
+    # --- ROCm GPU Access ---
+    # Standard ROCm device access - required for AMD GPU acceleration
     devices:
       - /dev/kfd
       - /dev/dri
-      - /dev/mem
     group_add:
       - video
       - render
-      # - 993 # Add numeric render/video group id(s) if your system has different group id(s) than the image - 44(video),109(render)
-    shm_size: 8g    
-    # --- End GPU Access ---
-
+    ipc: host
+    shm_size: 8g
+    security_opt:
+      - seccomp=unconfined
+    
+    # --- Optional: Enhanced ROCm Access ---
+    # Uncomment the lines below if you experience GPU access issues
+    # privileged: true
+    # cap_add:
+    #   - SYS_PTRACE
+    # devices:
+    #   - /dev/mem
+    
     restart: unless-stopped
     environment:
-      # Enable faster Hugging Face downloads inside the container
+      # Enable faster Hugging Face downloads
       - HF_HUB_ENABLE_HF_TRANSFER=1
-      # Make NVIDIA GPUs visible and specify capabilities for PyTorch
-      - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      # NOTE: HSA_OVERRIDE_GFX_VERSION should only be set by users with unsupported GPUs
+      # Example usage: HSA_OVERRIDE_GFX_VERSION=10.3.0 docker compose up
+      # Common values: 10.3.0 (RX 5000/6000), 11.0.0 (RX 7000), 9.0.6 (Vega)
+
+volumes:
+  hf_cache:
