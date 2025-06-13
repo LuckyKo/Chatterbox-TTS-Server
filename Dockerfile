@@ -1,5 +1,7 @@
 FROM nvidia/cuda:12.8.1-runtime-ubuntu22.04
 
+ARG RUNTIME=nvidia
+
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
@@ -32,7 +34,12 @@ COPY requirements.txt .
 # Upgrade pip and install Python dependencies
 RUN pip3 install --no-cache-dir --upgrade pip && \
     pip3 install --no-cache-dir -r requirements.txt
+# Conditionally install NVIDIA dependencies if RUNTIME is set to 'nvidia'
+COPY requirements-nvidia.txt .
 
+RUN if [ "$RUNTIME" = "nvidia" ]; then \
+    pip3 install --no-cache-dir -r requirements-nvidia.txt; \
+    fi
 # Copy the rest of the application code
 COPY . .
 
