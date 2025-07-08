@@ -35,6 +35,8 @@ def set_seed(seed_value: int):
     if torch.cuda.is_available():
         torch.cuda.manual_seed(seed_value)
         torch.cuda.manual_seed_all(seed_value)  # if using multi-GPU
+    if torch.backends.mps.is_available():
+        torch.mps.manual_seed(seed_value)
     random.seed(seed_value)
     np.random.seed(seed_value)
     logger.info(f"Global seed set to: {seed_value}")
@@ -57,6 +59,26 @@ def _test_cuda_functionality() -> bool:
         return True
     except Exception as e:
         logger.warning(f"CUDA functionality test failed: {e}")
+        return False
+
+
+def _test_mps_functionality() -> bool:
+    """
+    Tests if MPS is actually functional, not just available.
+
+    Returns:
+        bool: True if MPS works, False otherwise.
+    """
+    if not torch.backends.mps.is_available():
+        return False
+
+    try:
+        test_tensor = torch.tensor([1.0])
+        test_tensor = test_tensor.to("mps")
+        test_tensor = test_tensor.cpu()
+        return True
+    except Exception as e:
+        logger.warning(f"MPS functionality test failed: {e}")
         return False
 
 
@@ -84,9 +106,12 @@ def load_model() -> bool:
             if _test_cuda_functionality():
                 resolved_device_str = "cuda"
                 logger.info("CUDA functionality test passed. Using CUDA.")
+            elif _test_mps_functionality():
+                resolved_device_str = "mps"
+                logger.info("MPS functionality test passed. Using MPS.")
             else:
                 resolved_device_str = "cpu"
-                logger.info("CUDA not functional or not available. Using CPU.")
+                logger.info("CUDA and MPS not functional or not available. Using CPU.")
 
         elif device_setting == "cuda":
             if _test_cuda_functionality():
@@ -100,6 +125,18 @@ def load_model() -> bool:
                     "Automatically falling back to CPU."
                 )
 
+        elif device_setting == "mps":
+            if _test_mps_functionality():
+                resolved_device_str = "mps"
+                logger.info("MPS requested and functional. Using MPS.")
+            else:
+                resolved_device_str = "cpu"
+                logger.warning(
+                    "MPS was requested in config but functionality test failed. "
+                    "PyTorch may not be compiled with MPS support. "
+                    "Automatically falling back to CPU."
+                )
+
         elif device_setting == "cpu":
             resolved_device_str = "cpu"
             logger.info("CPU device explicitly requested in config. Using CPU.")
@@ -109,7 +146,12 @@ def load_model() -> bool:
                 f"Invalid device setting '{device_setting}' in config. "
                 f"Defaulting to auto-detection."
             )
-            resolved_device_str = "cuda" if _test_cuda_functionality() else "cpu"
+            if _test_cuda_functionality():
+                resolved_device_str = "cuda"
+            elif _test_mps_functionality():
+                resolved_device_str = "mps"
+            else:
+                resolved_device_str = "cpu"
             logger.info(f"Auto-detection resolved to: {resolved_device_str}")
 
         model_device = resolved_device_str
