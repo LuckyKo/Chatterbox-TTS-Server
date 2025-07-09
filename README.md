@@ -382,65 +382,94 @@ You can *optionally* use the `python download_model.py` script to pre-download s
 
 ## 🔄 Updating to the Latest Version
 
-Follow these steps to update your existing installation to the latest version from GitHub while preserving your local configuration.
+Follow these steps to update your local installation to the latest version from GitHub. This guide provides two methods: the recommended `git stash` workflow and a manual backup alternative. Both will preserve your local `config.yaml`.
 
-**1. Navigate to Your Project Directory**
+**First, Navigate to Your Project Directory & Activate Venv**
+
+Before starting, open your terminal, go to the project folder, and activate your virtual environment.
+
 ```bash
 cd Chatterbox-TTS-Server
+
+# On Windows (PowerShell):
+.\venv\Scripts\activate
+
+# On Linux (Bash):
+source venv/bin/activate
 ```
 
-**2. Activate Your Virtual Environment**
+---
 
-*   **Windows (PowerShell):**
-    ```powershell
-    .\venv\Scripts\activate
-    ```
+### **Method 1: Stash and Pop (Recommended)**
 
-*   **Linux (Bash):**
+This is the standard and safest way to update using Git. It automatically handles your local changes (like to `config.yaml`) without needing to manually copy files.
+
+*   **Step 1: Stash Your Local Changes**
+    This command safely stores your modifications on a temporary "shelf."
     ```bash
-    source venv/bin/activate
+    git stash
     ```
 
-**3. Backup Your Configuration**
-
-⚠️ **Important:** Always backup your `config.yaml` before updating to preserve your custom settings.
-
-```bash
-# Create a backup of your current configuration
-cp config.yaml config.yaml.backup
-```
-
-**4. Update the Repository**
-
-Choose one of the following methods based on your needs:
-
-*   **Standard Update (recommended):**
+*   **Step 2: Pull the Latest Version**
+    Now that your local changes are safely stored, you can download the latest code from GitHub.
     ```bash
     git pull origin main
     ```
-    If you encounter merge conflicts with `config.yaml`, continue to Step 5.
 
-*   **Force Update (if you have conflicts or want to ensure clean update):**
+*   **Step 3: Re-apply Your Changes**
+    This command takes your changes from the shelf and applies them back to the updated code.
     ```bash
-    # Fetch latest changes and reset to match remote exactly
-    git fetch origin
-    git reset --hard origin/main
+    git stash pop
+    ```
+    Your `config.yaml` will now have your settings, and the rest of the project files will be up-to-date. You can now proceed to the **"Final Steps"** section below.
+
+---
+
+### **Method 2: Manual Backup (Alternative)**
+
+This method involves manually backing up and restoring your configuration file.
+
+*   **Step 1: Backup Your Configuration**
+    ⚠️ **Important:** Create a backup of your `config.yaml` to preserve your custom settings.
+    ```bash
+    # Create a backup of your current configuration
+    cp config.yaml config.yaml.backup
     ```
 
-**5. Restore Your Configuration**
+*   **Step 2: Update the Repository**
+    Choose one of the following commands based on your needs:
+    *   **Standard Update (recommended):**
+        ```bash
+        git pull origin main
+        ```
+        If you encounter merge conflicts with `config.yaml`, you may need to resolve them manually.
+    *   **Force Update (if you have conflicts or want to ensure a clean update):**
+        ```bash
+        # Fetch latest changes and reset to match remote exactly
+        git fetch origin
+        git reset --hard origin/main
+        ```
 
-```bash
-# Restore your backed-up configuration
-cp config.yaml.backup config.yaml
-```
+*   **Step 3: Restore Your Configuration**
+    ```bash
+    # Restore your backed-up configuration
+    cp config.yaml.backup config.yaml
+    ```
+    Now, proceed to the **"Final Steps"** section.
 
-**6. Check for New Configuration Options**
+---
 
-⭐ **Recommended:** Compare your restored config with the new default config to see if there are new options you might want to adopt.
+### **Final Steps (For Both Methods)**
 
-**7. Update Dependencies**
+After you have updated the code using either method, complete these final steps.
 
-⭐ **Important:** Always update dependencies after pulling changes. Choose the command that matches your hardware.
+**1. Check for New Configuration Options**
+
+⭐ **Recommended:** Compare your restored `config.yaml` with the new default config to see if there are new options you might want to adopt. The server will add new keys with default values, but you may want to review them.
+
+**2. Update Dependencies**
+
+⭐ **Important:** After pulling new code, always update the dependencies to ensure you have the correct versions. Choose the command that matches your hardware:
 
 *   **For CPU-Only Systems:**
     ```bash
@@ -455,9 +484,9 @@ cp config.yaml.backup config.yaml
     pip install -r requirements-rocm.txt
     ```
 
-**8. Restart the Server**
+**3. Restart the Server**
 
-If the server was running, stop it (`CTRL+C`) and restart:
+If the server was running, stop it (`CTRL+C`) and restart it to apply all the updates.
 
 ```bash
 python server.py
