@@ -6,7 +6,7 @@
 > 
 > [![Open Live Demo](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/devnen/Chatterbox-TTS-Server/blob/main/Chatterbox_TTS_Colab_Demo.ipynb)
 
-This server is based on the architecture and UI of our [Dia-TTS-Server](https://github.com/devnen/Dia-TTS-Server) project but uses the distinct `chatterbox-tts` engine. Runs accelerated on NVIDIA (CUDA) and AMD (ROCm) GPUs, with a fallback to CPU.
+This server is based on the architecture and UI of our [Dia-TTS-Server](https://github.com/devnen/Dia-TTS-Server) project but uses the distinct `chatterbox-tts` engine. Runs accelerated on NVIDIA (CUDA), AMD (ROCm), and Apple Silicon (MPS) GPUs, with a fallback to CPU.
 
 [![Project Link](https://img.shields.io/badge/GitHub-devnen/Chatterbox--TTS--Server-blue?style=for-the-badge&logo=github)](https://github.com/devnen/Chatterbox-TTS-Server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
@@ -17,6 +17,7 @@ This server is based on the architecture and UI of our [Dia-TTS-Server](https://
 [![Web UI](https://img.shields.io/badge/Web_UI-Included-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](#)
 [![CUDA Compatible](https://img.shields.io/badge/NVIDIA_CUDA-Compatible-76B900?style=for-the-badge&logo=nvidia&logoColor=white)](https://developer.nvidia.com/cuda-zone)
 [![ROCm Compatible](https://img.shields.io/badge/AMD_ROCm-Compatible-ED1C24?style=for-the-badge&logo=amd&logoColor=white)](https://rocm.docs.amd.com/)
+[![MPS Compatible](https://img.shields.io/badge/Apple_MPS-Compatible-000000?style=for-the-badge&logo=apple&logoColor=white)](https://developer.apple.com/metal/)
 [![API](https://img.shields.io/badge/OpenAI_Compatible_API-Ready-000000?style=for-the-badge&logo=openai&logoColor=white)](https://platform.openai.com/docs/api-reference)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/devnen/Chatterbox-TTS-Server/blob/main/Chatterbox_TTS_Colab_Demo.ipynb)
 
@@ -36,7 +37,7 @@ The [Chatterbox TTS model by Resemble AI](https://github.com/resemble-ai/chatter
 The server expects plain text input for synthesis and we solve the complexity of setting up and running the model by offering:
 
 *   A **modern Web UI** for easy experimentation, preset loading, reference audio management, and generation parameter tuning.
-*   **Multi-Platform Acceleration:** Full support for **NVIDIA (CUDA)** and **AMD (ROCm)** GPUs, with an automatic fallback to **CPU**, ensuring you can run on any hardware.
+*   **Multi-Platform Acceleration:** Full support for **NVIDIA (CUDA)**, **AMD (ROCm)**, and **Apple Silicon (MPS)** GPUs, with an automatic fallback to **CPU**, ensuring you can run on any hardware.
 *   **Large Text Handling:** Intelligently splits long plain text inputs into manageable chunks based on sentence structure, processes them sequentially, and seamlessly concatenates the audio.
 *   **📚 Audiobook Generation:** Perfect for creating complete audiobooks - simply paste an entire book's text and the server automatically processes it into a single, seamless audio file with consistent voice quality throughout.
 *   **Predefined Voices:** Select from curated, ready-to-use synthetic voices for consistent and reliable output without cloning setup.
@@ -119,7 +120,7 @@ This server application enhances the underlying `chatterbox-tts` engine with the
     *   🔄 Easily specify model repository via `config.yaml`.
     *   📄 Optional `download_model.py` script available to pre-download specific model components to a local directory (this is separate from the main HF cache used at runtime).
 *   **Performance & Configuration:**
-    *   💻 **GPU Acceleration:** Automatically uses NVIDIA CUDA if available, falls back to CPU.
+    *   💻 **GPU Acceleration:** Automatically uses NVIDIA CUDA, Apple MPS, or AMD ROCm if available, falls back to CPU.
     *   ⚙️ All configuration via `config.yaml`.
     *   📦 Uses standard Python virtual environments.
 *   **Docker Support:**
@@ -139,6 +140,7 @@ This server application enhances the underlying `chatterbox-tts` engine with the
     *   **NVIDIA Drivers:** Latest version for your GPU/OS ([Download](https://www.nvidia.com/Download/index.aspx)).
     *   **AMD GPU:** ROCm-compatible (e.g., RX 6000/7000 series). Check [AMD ROCm GPUs](https://rocm.docs.amd.com/en/latest/reference/gpu-arch-specs.html).
     *   **AMD Drivers:** Latest ROCm-compatible drivers for your GPU/OS.
+    *   **Apple Silicon:** M1, M2, M3, or newer Apple Silicon chips with macOS 12.3+ for MPS acceleration.
 *   **(Linux Only):**
     *   `libsndfile1`: Audio library needed by `soundfile`. Install via package manager (e.g., `sudo apt install libsndfile1`).
     *   `ffmpeg`: For robust audio operations (optional but recommended). Install via package manager (e.g., `sudo apt install ffmpeg`).
@@ -243,6 +245,64 @@ The `requirements-rocm.txt` file works just like the NVIDIA one, but it points `
 
 ---
 
+### **Option 3: Apple Silicon (MPS) Installation**
+
+For users with Apple Silicon Macs (M1, M2, M3, etc.).
+
+**Prerequisite:** Ensure you have macOS 12.3 or later for MPS support.
+
+**Step 1: Install PyTorch with MPS support first**
+```bash
+# Make sure your (venv) is active
+pip install --upgrade pip
+pip install torch torchvision torchaudio
+```
+
+**Step 2: Configure the server to use MPS**
+Update your `config.yaml` to use MPS instead of CUDA:
+```bash
+# The server will create config.yaml on first run, or you can create it manually
+# Make sure the tts_engine device is set to 'mps'
+```
+
+**Step 3: Install remaining dependencies**
+```bash
+# Install chatterbox-tts without its dependencies to avoid conflicts
+pip install --no-deps git+https://github.com/resemble-ai/chatterbox.git
+
+# Install core server dependencies
+pip install fastapi 'uvicorn[standard]' librosa safetensors soundfile pydub audiotsm praat-parselmouth python-multipart requests aiofiles PyYAML watchdog unidecode inflect tqdm
+
+# Install missing chatterbox dependencies
+pip install conformer==0.3.2 diffusers==0.29.0 resemble-perth==1.0.1 transformers==4.46.3
+
+# Install s3tokenizer without its problematic dependencies
+pip install --no-deps s3tokenizer
+
+# Install a compatible version of ONNX
+pip install onnx==1.16.0
+```
+
+**Step 4: Configure MPS device**
+Either edit `config.yaml` manually or let the server create it, then modify:
+```yaml
+tts_engine:
+  device: mps  # Changed from 'cuda' to 'mps'
+```
+
+**After installation, verify that PyTorch can see your GPU:**
+```bash
+python -c "import torch; print(f'PyTorch version: {torch.__version__}'); print(f'MPS available: {torch.backends.mps.is_available()}'); print(f'Device will use: {\"mps\" if torch.backends.mps.is_available() else \"cpu\"}')"
+```
+If `MPS available:` shows `True`, your setup is correct!
+
+<details>
+<summary><strong>💡 Why This Process Is Different</strong></summary>
+Apple Silicon requires a specific installation sequence due to dependency conflicts between the pinned PyTorch versions in chatterbox-tts and the latest PyTorch versions that support MPS. By installing PyTorch first with MPS support, then carefully installing dependencies while avoiding version conflicts, we ensure MPS acceleration works properly. The server's automatic device detection will use MPS when configured and available.
+</details>
+
+---
+
 ## 🚀 Live Demo - Try It Now! (Google Colab)
 
 **Want to test Chatterbox TTS Server immediately without any installation?**
@@ -286,7 +346,7 @@ The server relies exclusively on `config.yaml` for runtime configuration.
 
 *   `server`: `host`, `port`, logging settings.
 *   `model`: `repo_id` (e.g., "ResembleAI/chatterbox").
-*   `tts_engine`: `device` ('auto', 'cuda', 'cpu'), `predefined_voices_path`, `reference_audio_path`, `default_voice_id`.
+*   `tts_engine`: `device` ('auto', 'cuda', 'mps', 'cpu'), `predefined_voices_path`, `reference_audio_path`, `default_voice_id`.
 *   `paths`: `model_cache` (for `download_model.py`), `output`.
 *   `generation_defaults`: Default UI values for `temperature`, `exaggeration`, `cfg_weight`, `seed`, `speed_factor`, `language`.
 *   `audio_output`: `format`, `sample_rate`, `max_reference_duration_sec`.
@@ -655,6 +715,11 @@ docker system df
 
 ## 🔍 Troubleshooting
 
+*   **Apple Silicon (MPS) Issues:**
+    *   **MPS Not Available:** Ensure you have macOS 12.3+ and an Apple Silicon Mac. Verify with `python -c "import torch; print(torch.backends.mps.is_available())"`
+    *   **Installation Conflicts:** If you encounter version conflicts, follow the exact Apple Silicon installation sequence in Option 3, installing PyTorch first before other dependencies.
+    *   **ONNX Build Errors:** Use the specific ONNX version `pip install onnx==1.16.0` as shown in the installation steps.
+    *   **Model Loading Errors:** Ensure `config.yaml` has `device: mps` in the `tts_engine` section.
 *   **CUDA Not Available / Slow:** Check NVIDIA drivers (`nvidia-smi`), ensure correct CUDA-enabled PyTorch is installed (Installation Step 4).
 *   **VRAM Out of Memory (OOM):**
     *   Ensure your GPU meets minimum requirements for Chatterbox.
