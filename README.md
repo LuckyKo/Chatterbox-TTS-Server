@@ -245,7 +245,7 @@ The `requirements-rocm.txt` file works just like the NVIDIA one, but it points `
 
 ---
 
-### **Option 3: Apple Silicon (MPS) Installation**
+### **Option 4: Apple Silicon (MPS) Installation**
 
 For users with Apple Silicon Macs (M1, M2, M3, etc.).
 
