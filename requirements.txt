@@ -16,7 +16,7 @@ torchaudio==2.6.0               # Audio processing utilities for PyTorch
 
 # --- Core TTS Application ---
 # Chatterbox TTS engine - installed directly from GitHub
-git+https://github.com/resemble-ai/chatterbox.git
+chatterbox-tts==0.1.2
 
 # --- Web Framework & Server ---
 fastapi                         # Modern async web framework
