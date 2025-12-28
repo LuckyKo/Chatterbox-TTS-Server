@@ -35,7 +35,7 @@ fastapi
 uvicorn[standard]
 
 # --- ML & Audio Libraries ---
-numpy>=1.24.0,<1.26.0  # Match chatterbox-v2 requirements
+# Note: numpy version handled by chatterbox-tts dependency
 soundfile
 librosa
 safetensors

@@ -78,6 +78,10 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "speed_factor": 1.0,  # Controls the speed of the generated speech.
         "language": "en",  # Default language for TTS.
     },
+    "text_processing": {  # Settings for text pre-processing (chunking).
+        "split_text_enabled": True,  # Whether to globally enable text splitting by default.
+        "chunk_size": 120,  # Default chunk size (characters) for splitting.
+    },
     "audio_output": {  # Settings related to the format of generated audio.
         "format": "wav",  # Output audio format (e.g., 'wav', 'mp3').
         "sample_rate": 24000,  # Sample rate of the output audio in Hz.
@@ -744,6 +748,23 @@ def get_model_repo_id() -> str:
     """Returns the Hugging Face repository ID for the model."""
     return config_manager.get_string(
         "model.repo_id", _get_default_from_structure("model.repo_id")
+    )
+
+
+# Text Processing Settings Accessors
+def get_split_text_enabled() -> bool:
+    """Returns whether text splitting is globally enabled."""
+    return config_manager.get_bool(
+        "text_processing.split_text_enabled",
+        _get_default_from_structure("text_processing.split_text_enabled"),
+    )
+
+
+def get_chunk_size() -> int:
+    """Returns the global default chunk size."""
+    return config_manager.get_int(
+        "text_processing.chunk_size",
+        _get_default_from_structure("text_processing.chunk_size"),
     )
 
 

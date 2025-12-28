@@ -1146,6 +1146,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             "tts_engine.device": currentConfig.tts_engine?.device, "tts_engine.default_voice_id": currentConfig.tts_engine?.default_voice_id,
             "paths.model_cache": currentConfig.paths?.model_cache, "tts_engine.predefined_voices_path": currentConfig.tts_engine?.predefined_voices_path,
             "tts_engine.reference_audio_path": currentConfig.tts_engine?.reference_audio_path, "paths.output": currentConfig.paths?.output,
+            "text_processing.split_text_enabled": currentConfig.text_processing?.split_text_enabled, "text_processing.chunk_size": currentConfig.text_processing?.chunk_size,
             "audio_output.format": currentConfig.audio_output?.format, "audio_output.sample_rate": currentConfig.audio_output?.sample_rate
         };
         for (const name in fieldsToDisplay) {

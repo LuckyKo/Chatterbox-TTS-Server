@@ -106,12 +106,12 @@ class Colors:
     DIM = "\033[2m"
     RESET = "\033[0m"
 
-    # Status icons
-    ICON_SUCCESS = "✓"
-    ICON_ERROR = "✗"
-    ICON_WARNING = "⚠"
-    ICON_INFO = "→"
-    ICON_WORKING = "●"
+    # Status icons - using ASCII equivalents for Windows compatibility
+    ICON_SUCCESS = "OK"
+    ICON_ERROR = "ERR"
+    ICON_WARNING = "WRN"
+    ICON_INFO = "->"
+    ICON_WORKING = "*"
 
     @staticmethod
     def is_windows():
@@ -755,7 +755,7 @@ def show_installation_menu(gpu_info, default_choice):
         # Check for special warnings
         warning = ""
         if num == "4" and is_windows():
-            warning = f" {Colors.YELLOW}⚠️ Not supported on Windows{Colors.RESET}"
+            warning = f" {Colors.YELLOW}Not supported on Windows{Colors.RESET}"
 
         # Build the option line
         default_marker = f" {Colors.GREEN}[DEFAULT]{Colors.RESET}" if is_default else ""
