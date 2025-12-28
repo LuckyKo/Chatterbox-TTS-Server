@@ -1152,9 +1152,16 @@ document.addEventListener('DOMContentLoaded', async function () {
         for (const name in fieldsToDisplay) {
             const input = serverConfigForm.querySelector(`input[name="${name}"]`);
             if (input) {
-                input.value = fieldsToDisplay[name] !== undefined ? fieldsToDisplay[name] : '';
+                const val = fieldsToDisplay[name] !== undefined ? fieldsToDisplay[name] : '';
+                if (input.type === 'checkbox') {
+                    input.checked = !!val;
+                } else {
+                    input.value = val;
+                }
+
                 if (name.includes('.host') || name.includes('.port') || name.includes('.device') || name.includes('paths.')) input.readOnly = true;
-                else input.readOnly = false;
+                else if (input.type !== 'checkbox') input.readOnly = false;
+                else input.disabled = false; // For checkboxes
             }
         }
     }

@@ -36,22 +36,11 @@ audio_output:
 ui_state:
   last_text: "[gasp] This is a disaster! An absolute catastrophe! [groan] The souffl\xE9\
     \ has fallen, and with it, my will to live! [sigh] Twenty years I have trained\
-    \ for this moment, and the universe conspires against me! [sniff] Do you smell\
-    \ that? That's the aroma of defeat! Of crushed dreams! [cough] And also burnt\
-    \ garlic, someone check station three! [clear throat] Listen to me, all of you!\
-    \ We have forty-five minutes until the food critics arrive. [shush] Do you hear\
-    \ that silence? That is the sound of our restaurant's reputation hanging by a\
-    \ thread! [laugh] But you know what? I refuse to surrender! [chuckle] They thought\
-    \ I was finished after the spaghetti incident of 2019, but I rose from those ashes\
-    \ like a phoenix! A very well-seasoned phoenix! [gasp] Wait, who put cilantro\
-    \ in the b\xE9arnaise?! [groan] This cannot be happening! [sigh] Okay, new plan.\
-    \ Everyone, gather around. [sniff] We're going to rebuild this souffl\xE9 from\
-    \ scratch, and it will be glorious! [cough] Or we'll all be looking for new jobs\
-    \ tomorrow. [laugh] No pressure! Let's cook!\n"
+    \ for this moment, and the universe conspires against me!\n"
   last_voice_mode: predefined
-  last_predefined_voice: am_Ryan.wav
+  last_predefined_voice: af_miniko.wav
   last_reference_file: nyan.wav
-  last_seed: 4
+  last_seed: 5
   last_chunk_size: 240
   last_split_text_enabled: true
   hide_chunk_warning: false
