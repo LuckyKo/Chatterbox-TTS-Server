@@ -124,6 +124,26 @@ class MelLengthWarningFilter(logging.Filter):
 logging.getLogger().addFilter(MelLengthWarningFilter())
 
 # --- Global Variables & Application Setup ---
+# TTS Request Semaphore: Ensures sequential processing of TTS requests
+# This prevents concurrent requests from competing for GPU/CPU resources,
+# allowing each request to complete faster with full model attention.
+# Each request returns immediately when done - no waiting for other requests.
+tts_generation_semaphore = threading.Semaphore(1)
+
+
+def with_tts_semaphore(func):
+    """
+    Decorator that wraps a function with the TTS semaphore.
+    Ensures only one TTS request is processed at a time.
+    """
+    from functools import wraps
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        with tts_generation_semaphore:
+            return func(*args, **kwargs)
+    return wrapper
+
+
 startup_complete_event = threading.Event()  # For coordinating browser opening
 
 
@@ -748,7 +768,8 @@ async def upload_predefined_voice_endpoint(files: List[UploadFile] = File(...)):
         },
     },
 )
-async def custom_tts_endpoint(
+@with_tts_semaphore
+def custom_tts_endpoint(
     request: CustomTTSRequest, background_tasks: BackgroundTasks
 ):
     """
@@ -1053,7 +1074,8 @@ async def custom_tts_endpoint(
 
 
 @app.post("/v1/audio/speech", tags=["OpenAI Compatible"])
-async def openai_speech_endpoint(request: OpenAISpeechRequest):
+@with_tts_semaphore
+def openai_speech_endpoint(request: OpenAISpeechRequest):
     # Log the raw request data for debugging purposes
     try:
         import json

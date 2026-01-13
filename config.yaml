@@ -34,13 +34,14 @@ audio_output:
   max_reference_duration_sec: 30
   save_to_disk: false
 ui_state:
-  last_text: "[gasp] This is a disaster! An absolute catastrophe! [groan] The souffl\xE9\
-    \ has fallen, and with it, my will to live! [sigh] Twenty years I have trained\
-    \ for this moment, and the universe conspires against me!\n"
+  last_text: I mean, it's good, but he didn't buy CD Projekt at the same point in
+    time, which is a little concerning. That said, most of the talent who worked on
+    the original Witcher games and Cyberpunk have moved to the new Rebel Wolves studio,
+    working on Dawn of the Bloodwalker.
   last_voice_mode: predefined
-  last_predefined_voice: af_miniko.wav
+  last_predefined_voice: af_anny.wav
   last_reference_file: nyan.wav
-  last_seed: 5
+  last_seed: 6
   last_chunk_size: 240
   last_split_text_enabled: true
   hide_chunk_warning: false
