@@ -1,11 +1,11 @@
 server:
   host: 0.0.0.0
-  port: 8004
+  port: 8884
   use_ngrok: false
   use_auth: false
   auth_username: user
   auth_password: password
-  log_file_path: logs/tts_server.log
+  log_file_path: logs\tts_server.log
   log_file_max_size_mb: 10
   log_file_backup_count: 5
 model:
@@ -26,7 +26,7 @@ generation_defaults:
   speed_factor: 1.0
   language: en
 audio_output:
-  format: wav
+  format: mp3
   sample_rate: 24000
   max_reference_duration_sec: 30
   save_to_disk: false
@@ -35,30 +35,16 @@ ui_state:
     How have we been in here for forty-five minutes and only solved two puzzles?!
     [clear throat] Let''s think logically. [sniff] This room smells like fear and
     bad decisions. [cough] And also someone''s very strong cologne, Kevin. [sigh]
-    Okay, the clue says "the answer lies where time stands still." [chuckle] Great,
-    very helpful, very straightforward. [shush] Everyone stop talking for one second!
-    [gasp] Wait, the clock on the wall! It''s stuck at three fifteen! [laugh] That''s
-    it! That has to be it! [groan] It''s not the combination. Of course it''s not
-    the combination. [sniff] Why would anything in this room be logical? [sigh] Has
-    anyone checked under the carpet? [gasp] There''s a hidden compartment! [chuckle]
-    Kevin, you''re standing on a clue! Classic Kevin! [clear throat] Okay, it''s another
-    riddle. "What has keys but no locks, space but no room, and you can enter but
-    can''t go inside?" [groan] Who writes these things?! [cough] A keyboard! It''s
-    a keyboard! [laugh] There''s a keyboard painted on the wall! [gasp] Eight minutes!
-    We have eight minutes! [sigh] If we don''t escape this room, we''re never speaking
-    of this again. [shush] Focus, everyone! [chuckle] We''re so close I can taste
-    freedom! [sniff] That or more of Kevin''s cologne!
-
-    '
+    Okay, the clue says "the answer lies where time stands still."'
   last_voice_mode: predefined
-  last_predefined_voice: Emily.wav
+  last_predefined_voice: af_Saba.wav
   last_reference_file: Gianna.wav
   last_seed: 3000
   last_chunk_size: 240
   last_split_text_enabled: true
   hide_chunk_warning: false
-  hide_generation_warning: false
-  theme: light
+  hide_generation_warning: true
+  theme: dark
   last_preset_name: "\u26A1 Turbo: Escape Room Panic"
 ui:
   title: Chatterbox TTS Server

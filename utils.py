@@ -366,6 +366,10 @@ def encode_audio(
     except Exception as e:
         logger.error(f"Error encoding audio to '{output_format}': {e}", exc_info=True)
         return None
+    finally:
+        # Clean up the buffer to free memory
+        if 'output_buffer' in locals():
+            output_buffer.close()
 
 
 def save_audio_to_file(

@@ -12,6 +12,7 @@ import time
 import uuid
 import yaml  # For loading presets
 import numpy as np
+import torch  # For GPU memory management
 import librosa  # For potential direct use if needed, though utils.py handles most
 from pathlib import Path
 from contextlib import asynccontextmanager
@@ -1214,9 +1215,28 @@ async def custom_tts_endpoint(
                 status_code=500, detail=f"Failed to save audio file: {e}"
             )
 
-    return StreamingResponse(
-        io.BytesIO(encoded_audio_bytes), media_type=media_type, headers=headers
-    )
+    try:
+        return StreamingResponse(
+            io.BytesIO(encoded_audio_bytes), media_type=media_type, headers=headers
+        )
+    finally:
+        # Explicit cleanup of large objects to free memory
+        del all_audio_segments_np
+        del final_audio_np
+        del encoded_audio_bytes
+
+        # Force garbage collection and clear GPU cache
+        import gc
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+            torch.cuda.empty_cache()
+        elif torch.backends.mps.is_available():
+            try:
+                torch.mps.synchronize()
+                torch.mps.empty_cache()
+            except AttributeError:
+                pass  # Older PyTorch versions may not have mps.empty_cache()
 
 
 @app.post("/v1/audio/speech", tags=["OpenAI Compatible"])
@@ -1323,8 +1343,27 @@ async def openai_speech_endpoint(request: OpenAISpeechRequest):
                     status_code=500, detail=f"Failed to save audio file: {e}"
                 )
 
-        # Return the streaming response
-        return StreamingResponse(io.BytesIO(encoded_audio), media_type=media_type)
+        try:
+            # Return the streaming response
+            return StreamingResponse(io.BytesIO(encoded_audio), media_type=media_type)
+        finally:
+            # Explicit cleanup of large objects to free memory
+            del audio_tensor
+            del audio_np
+            del encoded_audio
+
+            # Force garbage collection and clear GPU cache
+            import gc
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
+                torch.cuda.empty_cache()
+            elif torch.backends.mps.is_available():
+                try:
+                    torch.mps.synchronize()
+                    torch.mps.empty_cache()
+                except AttributeError:
+                    pass  # Older PyTorch versions may not have mps.empty_cache()
 
     except Exception as e:
         logger.error(f"Error in openai_speech_endpoint: {e}", exc_info=True)

@@ -397,6 +397,19 @@ def synthesize(
     except Exception as e:
         logger.error(f"Error during TTS synthesis: {e}", exc_info=True)
         return None, None
+    finally:
+        # Clean up any intermediate tensors that might be lingering
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+            torch.cuda.empty_cache()
+        elif torch.backends.mps.is_available():
+            try:
+                torch.mps.synchronize()
+                torch.mps.empty_cache()
+            except AttributeError:
+                # Older PyTorch versions may not have mps.empty_cache()
+                pass
+        gc.collect()
 
 
 def reload_model() -> bool:
