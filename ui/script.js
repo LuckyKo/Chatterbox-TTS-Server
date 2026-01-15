@@ -1146,14 +1146,22 @@ document.addEventListener('DOMContentLoaded', async function () {
             "tts_engine.device": currentConfig.tts_engine?.device, "tts_engine.default_voice_id": currentConfig.tts_engine?.default_voice_id,
             "paths.model_cache": currentConfig.paths?.model_cache, "tts_engine.predefined_voices_path": currentConfig.tts_engine?.predefined_voices_path,
             "tts_engine.reference_audio_path": currentConfig.tts_engine?.reference_audio_path, "paths.output": currentConfig.paths?.output,
+            "text_processing.split_text_enabled": currentConfig.text_processing?.split_text_enabled, "text_processing.chunk_size": currentConfig.text_processing?.chunk_size,
             "audio_output.format": currentConfig.audio_output?.format, "audio_output.sample_rate": currentConfig.audio_output?.sample_rate
         };
         for (const name in fieldsToDisplay) {
             const input = serverConfigForm.querySelector(`input[name="${name}"]`);
             if (input) {
-                input.value = fieldsToDisplay[name] !== undefined ? fieldsToDisplay[name] : '';
+                const val = fieldsToDisplay[name] !== undefined ? fieldsToDisplay[name] : '';
+                if (input.type === 'checkbox') {
+                    input.checked = !!val;
+                } else {
+                    input.value = val;
+                }
+
                 if (name.includes('.host') || name.includes('.port') || name.includes('.device') || name.includes('paths.')) input.readOnly = true;
-                else input.readOnly = false;
+                else if (input.type !== 'checkbox') input.readOnly = false;
+                else input.disabled = false; // For checkboxes
             }
         }
     }

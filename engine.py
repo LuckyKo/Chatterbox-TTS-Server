@@ -4,12 +4,24 @@
 import gc
 import logging
 import random
+import os
 import numpy as np
 import torch
 from typing import Optional, Tuple
 from pathlib import Path
 
-from chatterbox.tts import ChatterboxTTS  # Main TTS engine class
+# Explicitly set offline mode for Hugging Face before any imports
+os.environ["HF_HUB_OFFLINE"] = "1"
+os.environ["TRANSFORMERS_OFFLINE"] = "1"
+
+try:
+    from chatterbox.tts import ChatterboxTTS  # Main TTS engine class
+except ImportError as e:
+    print(f"Error importing ChatterboxTTS: {e}")
+    print("This may be due to protobuf/onnx compatibility issues.")
+    print("Please ensure all dependencies are compatible.")
+    # Re-raise the exception to fail fast
+    raise
 from chatterbox.models.s3gen.const import (
     S3GEN_SR,
 )  # Default sample rate from the engine
@@ -288,7 +300,27 @@ def load_model() -> bool:
                     f"Turbo model supports paralinguistic tags: {TURBO_PARALINGUISTIC_TAGS}"
                 )
 
-            # Load the model using from_pretrained - handles HuggingFace downloads automatically
+            # Set up offline mode and dummy token before loading
+            import huggingface_hub
+            from pathlib import Path
+
+            # Configure for offline operation
+            huggingface_hub.constants.HF_HUB_OFFLINE = True
+            os.environ["HF_HUB_OFFLINE"] = "1"
+
+            # Create a dummy token to satisfy the library's requirement without needing real authentication
+            # This is necessary because some versions of Hugging Face libraries check for token existence
+            cache_dir = Path(config_manager.get_string("paths.model_cache", "./model_cache"))
+            token_file = cache_dir / "token"
+
+            # Create token file if it doesn't exist
+            if not token_file.exists():
+                logger.info(f"Creating dummy token file at: {token_file}")
+                token_file.parent.mkdir(parents=True, exist_ok=True)
+                with open(token_file, 'w') as f:
+                    f.write('hf_dummy_for_offline_mode')  # Dummy token to satisfy library requirement
+
+            # Load the model using from_pretrained with offline settings
             chatterbox_model = model_class.from_pretrained(device=model_device)
 
             # Store model metadata

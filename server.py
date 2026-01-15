@@ -4,6 +4,10 @@
 # configuration management, and file uploads.
 
 import os
+# Explicitly set offline mode for Hugging Face before any imports
+os.environ["HF_HUB_OFFLINE"] = "1"
+os.environ["TRANSFORMERS_OFFLINE"] = "1"
+
 import io
 import logging
 import logging.handlers  # For RotatingFileHandler
@@ -19,6 +23,7 @@ from contextlib import asynccontextmanager
 from typing import Optional, List, Dict, Any, Literal
 import webbrowser  # For automatic browser opening
 import threading  # For automatic browser opening
+import torch  # For tensor operations
 
 from fastapi import (
     FastAPI,
@@ -45,6 +50,8 @@ from config import (
     get_host,
     get_port,
     get_log_file_path,
+    get_split_text_enabled,
+    get_chunk_size,
     get_output_path,
     get_reference_audio_path,
     get_predefined_voices_path,
@@ -105,7 +112,39 @@ logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
 logging.getLogger("watchfiles").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
+# --- Custom Logging Filters ---
+class MelLengthWarningFilter(logging.Filter):
+    """
+    Suppresses a specific warning from the chatterbox/s3gen model that is frequent but benign.
+    Warning: 'Reference mel length is not equal to 2 * reference token length.'
+    """
+    def filter(self, record):
+        return "Reference mel length is not equal to 2 * reference token length" not in record.getMessage()
+
+# Apply filter to the root logger to catch warnings from libraries using root logger
+logging.getLogger().addFilter(MelLengthWarningFilter())
+
 # --- Global Variables & Application Setup ---
+# TTS Request Semaphore: Ensures sequential processing of TTS requests
+# This prevents concurrent requests from competing for GPU/CPU resources,
+# allowing each request to complete faster with full model attention.
+# Each request returns immediately when done - no waiting for other requests.
+tts_generation_semaphore = threading.Semaphore(1)
+
+
+def with_tts_semaphore(func):
+    """
+    Decorator that wraps a function with the TTS semaphore.
+    Ensures only one TTS request is processed at a time.
+    """
+    from functools import wraps
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        with tts_generation_semaphore:
+            return func(*args, **kwargs)
+    return wrapper
+
+
 startup_complete_event = threading.Event()  # For coordinating browser opening
 
 
@@ -194,6 +233,44 @@ app.add_middleware(
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
+
+# --- Request Validation Logging Middleware ---
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import Response
+import json
+
+class RequestLoggingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        # Log request details for debugging malformed requests
+        try:
+            # Read the request body for logging
+            request_body = await request.body()
+            if request_body:
+                # Only log if it's a JSON request
+                if 'application/json' in str(request.headers.get('content-type', '').lower()):
+                    try:
+                        body_json = json.loads(request_body)
+                        logger.debug(f"Raw request body for {request.method} {request.url.path}: {json.dumps(body_json, indent=2)}")
+                    except json.JSONDecodeError:
+                        logger.warning(f"Could not parse JSON from request body for {request.method} {request.url.path}")
+
+            # Log headers for debugging
+            logger.debug(f"Request headers for {request.method} {request.url.path}: {dict(request.headers)}")
+        except Exception as e:
+            logger.warning(f"Could not log request details for {request.method} {request.url.path}: {e}")
+
+        # Process the request
+        try:
+            response = await call_next(request)
+        except Exception as e:
+            # Log the error before re-raising
+            logger.error(f"Request processing failed for {request.method} {request.url.path}: {str(e)}", exc_info=True)
+            raise
+        return response
+
+# Add the middleware to the application
+app.add_middleware(RequestLoggingMiddleware)
 
 # --- Static Files and HTML Templates ---
 ui_static_path = Path(__file__).parent / "ui"
@@ -615,6 +692,23 @@ async def get_predefined_voices_api():
         )
 
 
+@app.get(
+    "/v1/audio/voices", response_model=List[str], tags=["Audio"]
+)
+async def get_voices_api():
+    """Returns a list of predefined voice filenames."""
+    logger.debug("Request for /v1/audio/voices.")
+    try:
+        # Get the full list of voice data and extract just the filenames
+        full_voice_list = utils.get_predefined_voices()
+        return [voice['filename'] for voice in full_voice_list]
+    except Exception as e:
+        logger.error(f"Error getting voices for API: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve voices list."
+        )
+
+
 # --- File Upload Endpoints ---
 @app.post("/upload_reference", tags=["File Management"])
 async def upload_reference_audio_endpoint(files: List[UploadFile] = File(...)):
@@ -815,7 +909,8 @@ async def upload_predefined_voice_endpoint(files: List[UploadFile] = File(...)):
         },
     },
 )
-async def custom_tts_endpoint(
+@with_tts_semaphore
+def custom_tts_endpoint(
     request: CustomTTSRequest, background_tasks: BackgroundTasks
 ):
     """
@@ -834,6 +929,14 @@ async def custom_tts_endpoint(
             status_code=503,
             detail="TTS engine model is not currently loaded or available.",
         )
+
+    # Log the raw request data for debugging purposes
+    try:
+        import json
+        request_dict = request.dict()
+        logger.info(f"Full TTS request data: {json.dumps(request_dict, default=str, indent=2)}")
+    except Exception as e:
+        logger.warning(f"Could not log full request data: {e}")
 
     logger.info(
         f"Received /tts request: mode='{request.voice_mode}', format='{request.output_format}'"
@@ -1240,7 +1343,31 @@ async def custom_tts_endpoint(
 
 
 @app.post("/v1/audio/speech", tags=["OpenAI Compatible"])
-async def openai_speech_endpoint(request: OpenAISpeechRequest):
+@with_tts_semaphore
+def openai_speech_endpoint(request: OpenAISpeechRequest):
+    # Log the raw request data for debugging purposes
+    try:
+        import json
+        request_dict = request.dict()
+        logger.info(f"OpenAI speech request data: {json.dumps(request_dict, default=str, indent=2)}")
+    except Exception as e:
+        logger.warning(f"Could not log OpenAI request data: {e}")
+
+    # Validate the request data
+    if not request.input_ or not request.input_.strip():
+        logger.error("OpenAI speech request failed: 'input' field is empty or missing")
+        raise HTTPException(
+            status_code=400,
+            detail="'input' field is required and cannot be empty."
+        )
+
+    if not request.voice or not request.voice.strip():
+        logger.error("OpenAI speech request failed: 'voice' field is empty or missing")
+        raise HTTPException(
+            status_code=400,
+            detail="'voice' field is required and cannot be empty."
+        )
+
     # Determine the audio prompt path based on the voice parameter
     predefined_voices_path = get_predefined_voices_path(ensure_absolute=True)
     reference_audio_path = get_reference_audio_path(ensure_absolute=True)
@@ -1252,6 +1379,7 @@ async def openai_speech_endpoint(request: OpenAISpeechRequest):
     elif voice_path_reference.is_file():
         audio_prompt_path = voice_path_reference
     else:
+        logger.error(f"OpenAI speech request: Voice file '{request.voice}' not found in predefined or reference directories")
         raise HTTPException(
             status_code=404, detail=f"Voice file '{request.voice}' not found."
         )
@@ -1270,14 +1398,52 @@ async def openai_speech_endpoint(request: OpenAISpeechRequest):
         )
 
         # Synthesize the audio
-        audio_tensor, sr = engine.synthesize(
-            text=request.input_,
-            audio_prompt_path=str(audio_prompt_path),
-            temperature=get_gen_default_temperature(),
-            exaggeration=get_gen_default_exaggeration(),
-            cfg_weight=get_gen_default_cfg_weight(),
-            seed=seed_to_use,
-        )
+        # Check for global chunking settings
+        split_enabled = get_split_text_enabled()
+        global_chunk_size = get_chunk_size()
+
+        text_chunks = []
+        if split_enabled and len(request.input_) > (global_chunk_size * 1.5):
+            logger.info(f"OpenAI Endpoint: Splitting text into chunks of size ~{global_chunk_size} (Global setting)")
+            text_chunks = utils.chunk_text_by_sentences(request.input_, global_chunk_size)
+        else:
+            text_chunks = [request.input_]
+
+        audio_chunks = []
+        sr = None
+
+        for i, chunk_text in enumerate(text_chunks):
+            logger.debug(f"Synthesizing chunk {i+1}/{len(text_chunks)}: '{chunk_text[:30]}...'")
+            
+            chunk_audio_tensor, chunk_sr = engine.synthesize(
+                text=chunk_text,
+                audio_prompt_path=str(audio_prompt_path),
+                temperature=get_gen_default_temperature(),
+                exaggeration=get_gen_default_exaggeration(),
+                cfg_weight=get_gen_default_cfg_weight(),
+                seed=seed_to_use,
+            )
+
+            if chunk_audio_tensor is not None:
+                # If we have multiple chunks, we might want to ensure they are on CPU/numpy immediately to save VRAM
+                if sr is None:
+                    sr = chunk_sr
+                elif sr != chunk_sr:
+                     logger.warning(f"Sample rate mismatch in chunk {i}: expected {sr}, got {chunk_sr}")
+
+                audio_chunks.append(chunk_audio_tensor.cpu())
+            else:
+                 logger.error(f"Failed to synthesize chunk {i+1}")
+        
+        if not audio_chunks:
+             logger.error("No audio generated from chunks.")
+             raise HTTPException(status_code=500, detail="TTS generation failed.")
+
+        # Concatenate audio chunks
+        if len(audio_chunks) == 1:
+            audio_tensor = audio_chunks[0]
+        else:
+            audio_tensor = torch.cat(audio_chunks, dim=-1)
 
         if audio_tensor is None or sr is None:
             raise HTTPException(

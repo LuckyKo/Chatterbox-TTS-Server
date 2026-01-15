@@ -13,14 +13,15 @@ torchaudio==2.5.1+cu121
 # --- Core Application Dependencies ---
 
 # Chatterbox TTS engine - Install from chatterbox-v2 fork
-chatterbox-tts @ git+https://github.com/devnen/chatterbox-v2.git@master
+# Note: Installed separately with --no-deps to avoid numpy dependency conflicts
+# chatterbox-tts @ git+https://github.com/devnen/chatterbox-v2.git@master
 
 # Core Web Framework
 fastapi
 uvicorn[standard]
 
 # Other ML & Audio Libraries
-numpy>=1.24.0,<1.26.0  # Match chatterbox-v2 requirements
+# Note: numpy version handled by chatterbox-tts dependency
 soundfile  # Requires libsndfile system library
 librosa
 safetensors

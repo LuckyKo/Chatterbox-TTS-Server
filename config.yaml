@@ -16,36 +16,38 @@ tts_engine:
   reference_audio_path: reference_audio
   default_voice_id: Emily.wav
 paths:
-  model_cache: model_cache
+  model_cache: models
   output: outputs
 generation_defaults:
   temperature: 0.8
   exaggeration: 1.3
   cfg_weight: 0.5
-  seed: 0
-  speed_factor: 1.0
+  seed: 4
+  speed_factor: 1
   language: en
+text_processing:
+  split_text_enabled: true
+  chunk_size: 240
 audio_output:
   format: mp3
   sample_rate: 24000
   max_reference_duration_sec: 30
   save_to_disk: false
 ui_state:
-  last_text: '[gasp] Okay, we have fifteen minutes left! Fifteen minutes! [groan]
-    How have we been in here for forty-five minutes and only solved two puzzles?!
-    [clear throat] Let''s think logically. [sniff] This room smells like fear and
-    bad decisions. [cough] And also someone''s very strong cologne, Kevin. [sigh]
-    Okay, the clue says "the answer lies where time stands still."'
+  last_text: I mean, it's good, but he didn't buy CD Projekt at the same point in
+    time, which is a little concerning. That said, most of the talent who worked on
+    the original Witcher games and Cyberpunk have moved to the new Rebel Wolves studio,
+    working on Dawn of the Bloodwalker.
   last_voice_mode: predefined
-  last_predefined_voice: af_Saba.wav
-  last_reference_file: Gianna.wav
-  last_seed: 3000
+  last_predefined_voice: af_anny.wav
+  last_reference_file: nyan.wav
+  last_seed: 6
   last_chunk_size: 240
   last_split_text_enabled: true
   hide_chunk_warning: false
   hide_generation_warning: true
   theme: dark
-  last_preset_name: "\u26A1 Turbo: Escape Room Panic"
+  last_preset_name: "\u26A1 Turbo: The Overly Dramatic Chef"
 ui:
   title: Chatterbox TTS Server
   show_language_select: true
