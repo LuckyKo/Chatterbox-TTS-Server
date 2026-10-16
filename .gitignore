@@ -46,3 +46,12 @@ htmlcov/
 
 # Ignore log files
 *.log
+logs/
+
+# Local dedicated environment, model weights, and temp working dirs
+chatterbox_env/
+models/
+temp_chatterbox/
+
+# Scratch test output audio
+test_output.wav
