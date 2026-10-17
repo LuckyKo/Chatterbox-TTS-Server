@@ -238,6 +238,11 @@ def _load_turbo_model_fast(model_class, device: str):
     load, then restores it; the stock from_pretrained/from_local body is reused
     unchanged. The caller falls back to stock from_pretrained on any failure, so
     correctness is never traded for speed.
+    
+    Coupling: this relies on from_local resolving T3 as a tts_turbo module-global
+    (tts_turbo.py: `t3 = T3(hp)`). If a future refactor binds T3 differently
+    the patch simply no-ops and the stock path is used -- a safe degradation, not
+    a failure. Not thread-safe (global monkey-patch); fine for the one-shot CLI.
     """
     import chatterbox.tts_turbo as _tt
     
