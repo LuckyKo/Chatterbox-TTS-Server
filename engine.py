@@ -240,32 +240,30 @@ def _load_turbo_model_fast(model_class, device: str):
     correctness is never traded for speed.
     """
     import chatterbox.tts_turbo as _tt
-
+    
     _orig_T3 = _tt.T3
-
+    
     def _fast_T3(hp):
         with torch.device("meta"):
             m = _orig_T3(hp)
         m = m.to_empty(device=device)
         # to_empty leaves GPT2's non-persistent causal-mask buffers as garbage
-        # (they are persistent=False, so not in the checkpoint). Restore them
-        # exactly as transformers GPT2Attention.__init__ builds them
-        # (modeling_gpt2.py:128-135), reading max_positions from each module's
-        # own config so it stays consistent with the installed transformers.
-        # Without this the causal mask is garbage and the audio differs.
+        # (persistent=False, so not in the checkpoint). Restore them exactly as
+        # transformers GPT2Attention.__init__ builds them (modeling_gpt2.py:128-135),
+        # reading max_positions from the config so it stays consistent with the
+        # installed transformers. Without this the causal mask is garbage and the
+        # forward pass is wrong. The mask is identical for every layer (same
+        # config.max_position_embeddings) and forward only reads a slice of it, so
+        # build it ONCE and share the tensor across all layers -- this avoids 23
+        # redundant 8196x8196 allocations (~1.3s and ~1.5GB peak saved).
+        max_pos = m.tfmr.h[0].attn.config.max_position_embeddings
+        causal_bias = torch.tril(
+            torch.ones((max_pos, max_pos), dtype=torch.bool, device=device)
+        ).view(1, 1, max_pos, max_pos)
+        masked_bias = torch.tensor(-1e4, device=device)
         for block in m.tfmr.h:
-            attn = block.attn
-            max_pos = attn.config.max_position_embeddings
-            attn.register_buffer(
-                "bias",
-                torch.tril(
-                    torch.ones((max_pos, max_pos), dtype=torch.bool, device=device)
-                ).view(1, 1, max_pos, max_pos),
-                persistent=False,
-            )
-            attn.register_buffer(
-                "masked_bias", torch.tensor(-1e4, device=device), persistent=False
-            )
+            block.attn.register_buffer("bias", causal_bias, persistent=False)
+            block.attn.register_buffer("masked_bias", masked_bias, persistent=False)
         return m
     _tt.T3 = _fast_T3
     try:
