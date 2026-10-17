@@ -231,8 +231,11 @@ def _load_turbo_model_fast(model_class, device: str):
     are not saved to the checkpoint and not materialized by ``to_empty``; meta
     construction leaves them as meta tensors and inference crashes. T3 has no such
     tables; its only non-persistent buffers are GPT2's attn.bias / masked_bias
-    causal-mask buffers, which ARE read in forward (modeling_gpt2.py:198), so they
-    are restored explicitly below.
+    causal-mask buffers, which ARE read in the attention forward pass (exact line
+    varies by transformers version -- do not hardcode it), so they are restored
+    explicitly below. A guard verifies those buffer names still exist before the
+    patch; if a future transformers refactor re-schemes them, the load falls back
+    to the stock constructor rather than producing subtly wrong audio.
 
     Patches only the T3 symbol in the tts_turbo namespace for the duration of the
     load, then restores it; the stock from_pretrained/from_local body is reused
@@ -254,14 +257,28 @@ def _load_turbo_model_fast(model_class, device: str):
         m = m.to_empty(device=device)
         # to_empty leaves GPT2's non-persistent causal-mask buffers as garbage
         # (persistent=False, so not in the checkpoint). Restore them exactly as
-        # transformers GPT2Attention.__init__ builds them (modeling_gpt2.py:128-135),
-        # reading max_positions from the config so it stays consistent with the
-        # installed transformers. Without this the causal mask is garbage and the
-        # forward pass is wrong. The mask is identical for every layer (same
+        # transformers' GPT2Attention.__init__ builds them, reading max_positions
+        # from the config so it stays consistent with the installed transformers.
+        # Without this the causal mask is garbage and the forward pass is wrong.
+        # The mask is identical for every layer (same
         # config.max_position_embeddings) and forward only reads a slice of it, so
         # build it ONCE and share the tensor across all layers -- this avoids 23
         # redundant 8196x8196 allocations (~1.3s and ~1.5GB peak saved).
-        max_pos = m.tfmr.h[0].attn.config.max_position_embeddings
+        #
+        # Guard: this restoration hardcodes the legacy buffer names "bias" /
+        # "masked_bias". If a future transformers refactor renames or re-schemes
+        # those eagerly-registered non-persistent masks, silently patching the old
+        # names would leave the real mask as to_empty garbage -> subtly wrong audio.
+        # So verify the expected scheme is actually present; if not, raise and let
+        # the caller fall back to the stock loader (correctness over speed).
+        _attn0 = m.tfmr.h[0].attn
+        if not {"bias", "masked_bias"} <= set(getattr(_attn0, "_buffers", {})):
+            raise RuntimeError(
+                "fast T3 loader: expected GPT2 attn buffers {'bias','masked_bias'} "
+                f"not found (got {sorted(getattr(_attn0, '_buffers', {}))}); "
+                "transformers buffer scheme changed -- falling back to stock load."
+            )
+        max_pos = _attn0.config.max_position_embeddings
         causal_bias = torch.tril(
             torch.ones((max_pos, max_pos), dtype=torch.bool, device=device)
         ).view(1, 1, max_pos, max_pos)
